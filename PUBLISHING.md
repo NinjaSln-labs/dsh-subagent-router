@@ -9,13 +9,21 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | ✅ `dsh-subagent-router@0.3.0`（latest，CI 自动发布）· `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
-| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
+| npm | ✅ `dsh-subagent-router@0.4.0`（latest，CI 自动发布）· `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
+| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.4.0`（本单库首个）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
-| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.3.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
-| 发布管道 | ✅ tag → 版本守卫 → 验证链 → 人工审批 → publish（0.1.1 首次跑通；0.3.0 第三次） |
+| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.4.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
+| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**） |
 
 ## 版本历史
+
+- **0.4.0** — **单库化后首个版本 + peer 对齐宿主 alpha + 配置面板修复闭环**（本单库发布）：
+  - 单库迁移：dsh-plugins monorepo → `NinjaSln-labs/dsh-subagent-router` 独立仓库（subtree split 保留历史）；check:deploy + pre-commit 部署纪律落地
+  - peer 对齐宿主 alpha（`0cc33e1`）：cordis `^4.0.2` / dsh-client-runtime `^0.1.1-rc.2` / 其余 dsh 宿主包 `^0.1.2-alpha.4`；适配 dsh-settings `installSection`、dsh-util-values `JsonValue`、`ToolCallId`、provider `agentOptions` capability
+  - 配置面板修复：模型目录改走 host catalog RPC（`309323a`）、推荐分类超时 8000ms（`ad75a14`）、分档策略合并为单个「选型策略」控件 + 补 light 档（`017d3e8`/`467c87d`）
+  - **根治「选默认保存又回固定」**（`aa2ccfe`）：host 侧 schemastery schema 归一化把缺失 `autoTierPicks` 补成四档空数组、client `picks !== undefined` 误判为「固定」；档位数组/标量加 `.default(undefined)` 修复（Playwright 实机复测通过）
+  - 验证：strict typecheck + 132/132 vitest + build + mount 全绿；CI 等价验证通过后推 `subagent-router-v0.4.0` tag → OIDC trusted publishing 发布（public 源仓库，provenance v1）
+  - 发布前置（承接）：Trusted Publisher 在 npmjs.com 配置完毕（Owner=`NinjaSln-labs` / Repo=`dsh-subagent-router` / Workflow=`publish.yml`）
 
 - **0.3.0** — **配置面瘦身 + 枚举化 + 1c 目录元数据**（接手会话配置体验闭环，breaking）：
   - 配置面瘦身：注册快照 8 项（subagentProvider/toolName/modelsToolName/enableRunInBackground/backgroundMode/enableModelList/enableAuto/maxDepth）剔除、固定为 `fixedConfig`（spawn / continuable / provider-managed）；只留 live 字段——「保存即生效」对所有可见配置成立
