@@ -44,7 +44,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { SubagentProvider } from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+// dsh-settings@>=0.1.2-alpha.4: module-level exports removed; the value import
+// below also loaded its `Context.settings` type augmentation — keep a side-effect
+// import so the module's `declare module` is still seen by the type system.
+import '@deepseek-ai/dsh-settings'
 import { registerModelPickerTools } from './tools.ts'
 import { Config, fixedConfig } from './config.ts'
 export { Config } from './config.ts'
@@ -120,17 +123,27 @@ export function apply(ctx: Context, config: ModelPickerConfig = {}): void {
   // `setSource` hands us a thunk reading the live settings scope; `onChange`
   // fires on every committed settings write, so we re-resolve from that
   // thunk — this is what makes a 设置 → 插件配置 edit take effect live.
-  // installSettingsSection wires through `ctx.inject(['settings'], …)`, so it
-  // waits for the settings service to mount (and is inert when it never does).
+  // settings.installSection is wired through `ctx.inject(['settings'], …)`,
+  // so it waits for the settings service to mount (and is inert when it never
+  // does). dsh-settings@>=0.1.2-alpha.4 removed the module-level
+  // installSettingsSection/settingsNamespace exports.
   let readScope: (() => ModelPickerConfig) | undefined
-  installSettingsSection(ctx, settingsNamespace('subagent-router'), Config, config, {
-    setSource: (current) => {
-      readScope = current
-      resolved = resolveConfig(current())
-    },
-    onChange: () => {
-      if (readScope !== undefined) resolved = resolveConfig(readScope())
-    },
+  ctx.inject(['settings'], (sctx) => {
+    try {
+      sctx.settings.installSection(ctx, 'subagent-router', Config, config, {
+        setSource: (current) => {
+          readScope = current
+          resolved = resolveConfig(current())
+        },
+        onChange: () => {
+          if (readScope !== undefined) resolved = resolveConfig(readScope())
+        },
+      })
+    } catch (err) {
+      ctx.logger.warn(
+        `[dsh-subagent-router] settings section invalid — falling back to entry config: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
   })
   // Registration-time knobs are fixed constants (see `fixedConfig` in
   // config.ts): the subagent provider, tool names, background mode

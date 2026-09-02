@@ -15,7 +15,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import type { SubagentProvider, SubagentResult, SubagentRun } from '@deepseek-ai/dsh-subagent'
-import { CallId, LlmError } from '@deepseek-ai/dsh-llm'
+import { ToolCallId, LlmError } from '@deepseek-ai/dsh-llm'
 import plugin from '../src/index.ts'
 import type { ModelPickerConfig } from '../src/index.ts'
 import { classifyFailure, failureLabel, sanitizeFailureDetail } from '../src/failure.ts'
@@ -29,7 +29,7 @@ const fakeAgent = { id: 'parent-1', ctx: undefined } as never
 /** Scripted subagent provider that captures every start request. */
 class ScriptedProvider implements SubagentProvider {
   readonly inheritsParentContext = false
-  readonly capabilities = { outputSchema: true, depthLimit: true, toolFilter: true, persona: true }
+  readonly capabilities = { agentOptions: true, outputSchema: true, depthLimit: true, toolFilter: true, persona: true }
   starts: Array<Record<string, unknown>> = []
   reply = 'child says hi'
   /** The first N starts fail with stopReason 'error' (before the reply). */
@@ -176,7 +176,7 @@ function callTool(ctx: Context, name: string, args: unknown, agent?: unknown) {
   const arguments_ = { run_in_background: false, ...(args as Record<string, unknown>) }
   return ctx.tools.execute({
     signal: testToolSignal,
-    callId: CallId(`call-${++callCounter}`),
+    callId: ToolCallId(`call-${++callCounter}`),
     name,
     arguments: arguments_,
     ...agent !== undefined ? { agent } : {},
@@ -1417,35 +1417,33 @@ describe('dsh-subagent-router config schema', () => {
 })
 
 describe('dsh-subagent-router host settings integration', () => {
-  /** Minimal settings service: register returns a scope whose `get` reads a
-   *  mutable section merged over the schema defaults; external `setSection`
-   *  updates it and fires watchers (the settings user-layer write path). */
+  /** Minimal settings service: implements the new dsh-settings@>=0.1.2-alpha.4
+   *  `installSection(owner, ns, schema, entry, hooks)` contract (the old
+   *  `register` module path was removed). The resolved value is the schema
+   *  defaults merged over the composition `entry` then the user `section`;
+   *  `setSection` writes the user layer and re-fires setSource + onChange. */
   function fakeSettingsService() {
     let section: Record<string, unknown> = {}
-    const watchers = new Set<() => void>()
-    const schemas = new Map<string, { defaults: Record<string, unknown> }>()
+    let entry: object = {}
+    const hooks = { setSource: null as null | ((fn: () => unknown) => void), onChange: null as null | (() => void) }
+    const resolve = () => ({ ...entry, ...section })
     const service = {
-      register(ns: string, schema: { defaults?: Record<string, unknown> }, options: { base?: object } = {}) {
-        schemas.set(ns, { defaults: (schema as { defaults?: Record<string, unknown> }).defaults ?? {} })
-        const scope = {
-          get() {
-            return { ...schemas.get(ns)!.defaults, ...options.base, ...section }
-          },
-          watch(cb: () => void) {
-            watchers.add(cb)
-            return () => watchers.delete(cb)
-          },
-          update(patch: object) {
-            section = { ...section, ...patch }
-            for (const cb of watchers) cb()
-          },
+      installSection(_owner: unknown, _ns: string, _schema: unknown, entry_: object, h: { setSource: (fn: () => unknown) => void; onChange: () => void }) {
+        entry = entry_ ?? {}
+        hooks.setSource = h.setSource
+        hooks.onChange = h.onChange
+        hooks.setSource(resolve)
+        hooks.onChange()
+        return {
+          get: () => resolve(),
+          watch: () => () => {},
+          update: async (patch: object) => { section = { ...section, ...patch }; hooks.setSource?.(resolve); hooks.onChange?.() },
         }
-        return scope
       },
       describe() { return [] },
       get(_ns: string) { return undefined },
     }
-    return { service, setSection: (patch: object) => { section = { ...section, ...patch }; for (const cb of watchers) cb() } }
+    return { service, setSection: (patch: object) => { section = { ...section, ...patch }; hooks.setSource?.(resolve); hooks.onChange?.() } }
   }
 
   it('reads configuration from the settings scope when the service is present', async () => {
