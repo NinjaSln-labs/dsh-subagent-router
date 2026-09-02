@@ -41,8 +41,8 @@ type Section = {
   autoReroute?: boolean
   autoEscalationTiers?: number
   autoProviderOrder?: string[]
-  autoTierPolicy?: Partial<Record<'trivial' | 'standard' | 'complex', 'anchor' | 'cheapest' | 'strongest'>>
-  autoTierPicks?: Partial<Record<'trivial' | 'standard' | 'complex', string[]>>
+  autoTierPolicy?: Partial<Record<'trivial' | 'light' | 'standard' | 'complex', 'anchor' | 'cheapest' | 'strongest'>>
+  autoTierPicks?: Partial<Record<'trivial' | 'light' | 'standard' | 'complex', string[]>>
   recommendTimeoutMs?: number
 }
 
@@ -158,8 +158,9 @@ const GROUPS: Array<{ id: FieldGroup | 'tier'; title: string }> = [
   { id: 'tier', title: '分档策略' },
 ]
 
-const TIER_LABELS: Array<['trivial' | 'standard' | 'complex', string]> = [
+const TIER_LABELS: Array<['trivial' | 'light' | 'standard' | 'complex', string]> = [
   ['trivial', '琐碎'],
+  ['light', '轻量'],
   ['standard', '普通'],
   ['complex', '复杂'],
 ]
@@ -365,7 +366,7 @@ function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElem
     setSaved(false)
     setDraft(prev => ({ ...(prev ?? committed), ...patch }))
   }
-  const onTierEdit = (tier: 'trivial' | 'standard' | 'complex', mode: string): void => {
+  const onTierEdit = (tier: 'trivial' | 'light' | 'standard' | 'complex', mode: string): void => {
     setDraft(prev => {
       const base = prev ?? committed
       const policy = { ...(base.autoTierPolicy ?? {}) }
@@ -387,7 +388,7 @@ function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElem
       }
     })
   }
-  const onTierPicksEdit = (tier: 'trivial' | 'standard' | 'complex', parts: string[]): void => {
+  const onTierPicksEdit = (tier: 'trivial' | 'light' | 'standard' | 'complex', parts: string[]): void => {
     setDraft(prev => {
       const base = prev ?? committed
       const current = base.autoTierPicks ?? {}
