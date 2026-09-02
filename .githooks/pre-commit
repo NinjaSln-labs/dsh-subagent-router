@@ -1,0 +1,20 @@
+#!/bin/sh
+# 部署纪律硬拦截：提交涉及插件源码（src/，lib/ 为构建产物已 ignore）时，
+# 强制跑装后自检（DEVELOPMENT.md「部署纪律：profile 安装」）。
+# 启用方式：git config core.hooksPath .githooks
+
+changed=$(git diff --cached --name-only --diff-filter=ACMR \
+        | grep -E '^(src|scripts)/' \
+        | head -1)
+[ -z "$changed" ] && exit 0
+
+echo "pre-commit：检测到源码改动（src/scripts），执行部署纪律自检 npm run check:deploy ..."
+node scripts/check-deploy.mjs
+code=$?
+if [ $code -ne 0 ]; then
+  echo ""
+  echo "✗ 部署纪律自检 FAIL：该插件源码与 profile 部署产物不一致（同版本号不同内容事故拦截点）。"
+  echo "  修复：npm run build 后执行 dsh plugin --profile web install，再重跑 npm run check:deploy。"
+  echo "  若本次提交确属尚未部署的中间态，请 commit --no-verify 并在提交说明注明\"未部署，部署前需自检\"。"
+  exit 1
+fi

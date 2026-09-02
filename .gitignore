@@ -2,3 +2,11 @@ node_modules/
 lib/
 *.tgz
 .DS_Store
+*.log
+
+# 本地交接文档私有，不追踪、不入仓库
+HANDOFF.md
+HANDOFF-ARCHIVE/
+
+# commit-msg 钩子含本地私有身份检查，不追踪（pre-commit 随仓库分发）
+.githooks/commit-msg

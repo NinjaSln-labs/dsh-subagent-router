@@ -2,12 +2,15 @@
 
 **已发布**（GitHub + npm）：`dsh-subagent-router@0.3.0`（latest，git CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
 
-## 发布状态（2026-08-27 更新）
+## 发布状态（2026-09 单库化更新）
+
+> 本仓库 2026-09 从 dsh-plugins monorepo 迁出为独立单库（`NinjaSln-labs/dsh-subagent-router`），
+> 历史 0.3.0 及更早在 monorepo 发布；此后版本在**本单库**发布。
 
 | 项 | 状态 |
 |---|---|
 | npm | ✅ `dsh-subagent-router@0.3.0`（latest，CI 自动发布）· `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
-| GitHub | ✅ `NinjaSln-labs/dsh-plugins` main，tag `subagent-router-v0.3.0` |
+| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
 | profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.3.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
 | 发布管道 | ✅ tag → 版本守卫 → 验证链 → 人工审批 → publish（0.1.1 首次跑通；0.3.0 第三次） |
@@ -47,11 +50,11 @@
 ## 发布流程（日常）
 
 ```bash
-cd dsh-plugins/dsh-subagent-router
+# 本单库仓库根即插件目录（2026-09 单库化）
 npm version patch --no-git-tag-version -m "chore: release v%s"
 git add package.json && git commit -m "chore: release v$(node -p "require('./package.json').version")"
 git tag subagent-router-v$(node -p "require('./package.json').version")
-git push && git push --tags    # CI 验证 → GitHub 审批 → 自动 publish
+git push && git push --tags    # CI 验证 → 人工审批 → OIDC trusted publishing 发布
 ```
 
 ## 维护规则

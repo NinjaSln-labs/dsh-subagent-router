@@ -1,9 +1,9 @@
 # dsh-subagent-router
 
-[简体中文](https://github.com/NinjaSln-labs/dsh-plugins/blob/main/dsh-subagent-router/README.md) | English
+[简体中文](README.md) | English
 
 [![npm version](https://img.shields.io/npm/v/dsh-subagent-router)](https://www.npmjs.com/package/dsh-subagent-router)
-[![GitHub stars](https://img.shields.io/github/stars/NinjaSln-labs/dsh-plugins?style=social)](https://github.com/NinjaSln-labs/dsh-plugins)
+[![GitHub stars](https://img.shields.io/github/stars/NinjaSln-labs/dsh-subagent-router?style=social)](https://github.com/NinjaSln-labs/dsh-subagent-router)
 
 Model-routed subagent delegation for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). The shipped `subagent` tool inherits the parent's model route; this plugin adds a sibling tool that lets the delegating model pick the child's LLM **provider**, **model**, and **output cap** per call (or hand the choice to the built-in `model: "auto"` routing policy) — while everything else about the delegation (depth accounting, delegation policy, continuable background children, results) stays exactly on the standard `ctx.subagents` seam.
 
@@ -113,9 +113,9 @@ With model-routing priorities (configure to your own provider preferences):
 ## Development
 
 ```bash
-pnpm install
-pnpm test       # vitest: schema shape, route validation, agentOptions pass-through, catalog tool, auto policy + escalation, health rerouting
-pnpm run build  # tsc -> lib/
+npm install --legacy-peer-deps
+npm test       # vitest: schema shape, route validation, agentOptions pass-through, catalog tool, auto policy + escalation, health rerouting
+npm run build  # tsc -> lib/ + esbuild client bundle
 ```
 
 The test suite drives the real plugin body on a real `ToolRuntime` + `SubagentRuntime` with a scripted subagent provider and a faked `llm` route registry; no network or credentials are touched.

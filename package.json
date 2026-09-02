@@ -9,12 +9,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NinjaSln-labs/dsh-plugins.git",
-    "directory": "dsh-subagent-router"
+    "url": "git+https://github.com/NinjaSln-labs/dsh-subagent-router.git"
   },
-  "homepage": "https://github.com/NinjaSln-labs/dsh-plugins/tree/main/dsh-subagent-router#readme",
+  "homepage": "https://github.com/NinjaSln-labs/dsh-subagent-router#readme",
   "bugs": {
-    "url": "https://github.com/NinjaSln-labs/dsh-plugins/issues"
+    "url": "https://github.com/NinjaSln-labs/dsh-subagent-router/issues"
   },
   "keywords": [
     "deepseek-harness",
@@ -53,7 +52,8 @@
     "build:client": "node scripts/build-client.mjs",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit || true",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:deploy": "node scripts/check-deploy.mjs"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"
@@ -72,6 +72,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
     "@deepseek-ai/dsh-jobs": "^0.1.0-rc.5",
     "@deepseek-ai/dsh-llm": "^0.1.0-rc.5",
     "@deepseek-ai/dsh-settings": "^0.1.0-rc.8",
@@ -83,10 +84,34 @@
     "react": "^18.2.0"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-agent-presets": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-attachment": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-brand": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-code-runtime": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-ui-settings": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-jobs": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-scope": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-session-persistence": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-session-projection": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-session-projection-cache": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-subagent": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-timeout": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-user-approval": "^0.1.0-rc.8",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.31",
     "esbuild": "^0.25.0",
+    "react": "^18.2.0",
     "typescript": "^5.0.0",
     "vitest": "^4.1.10"
   }

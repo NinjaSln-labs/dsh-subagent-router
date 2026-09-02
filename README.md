@@ -1,9 +1,11 @@
 # dsh-subagent-router
 
-[English](https://github.com/NinjaSln-labs/dsh-plugins/blob/main/dsh-subagent-router/README.en.md) | 简体中文
+[English](README.en.md) | 简体中文
 
 [![npm version](https://img.shields.io/npm/v/dsh-subagent-router)](https://www.npmjs.com/package/dsh-subagent-router)
-[![GitHub stars](https://img.shields.io/github/stars/NinjaSln-labs/dsh-plugins?style=social)](https://github.com/NinjaSln-labs/dsh-plugins)
+[![GitHub stars](https://img.shields.io/github/stars/NinjaSln-labs/dsh-subagent-router?style=social)](https://github.com/NinjaSln-labs/dsh-subagent-router)
+
+> 中文为本仓库权威文档；[English](README.en.md) 翻译可能滞后。
 
 为 subagent 委派做模型路由的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件。自带的 `subagent` 工具只会继承父级模型路由；本插件新增一个姊妹工具，让委派模型在每次调用时自行挑选子代理的 LLM **provider**、**model** 与 **输出上限**（或把选择交给内置的 `model: "auto"` 路由策略）—— 而委派的其他一切（深度核算、委派策略、continuable 后台子代理、结果收集）仍然完全走标准的 `ctx.subagents` 通道。
 
@@ -104,9 +106,9 @@ bundle 只插入一行组合（`subagent-router`）。它消费 host 的 `tools`
 ## 开发
 
 ```bash
-pnpm install
-pnpm test       # vitest：schema 形态、路由校验、agentOptions 透传、目录工具、auto 策略与升级、健康换路
-pnpm run build  # tsc -> lib/
+npm install --legacy-peer-deps
+npm test       # vitest：schema 形态、路由校验、agentOptions 透传、目录工具、auto 策略与升级、健康换路
+npm run build  # tsc -> lib/ + esbuild 客户端 bundle
 ```
 
 测试套件在真实的 `ToolRuntime` + `SubagentRuntime` 上驱动真实插件体，使用脚本化子代理 provider 与伪造的 `llm` 路由注册表；不触网、不用凭据。

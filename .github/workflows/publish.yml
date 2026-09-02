@@ -1,0 +1,70 @@
+# dsh-subagent-router 发布工作流（OIDC Trusted Publishing）
+#
+# 安全模型（2026-09 单库化，从 monorepo 的 NPM_TOKEN + 人工审批迁移到 OIDC）：
+# - 触发 = 本机人工创建的 tag（subagent-router-vX.Y.Z），发布决策永远是人的决定
+# - 认证：npm Trusted Publishing（OIDC）——npmjs.com 包设置里配置的 trusted
+#   publisher 只接受本仓库 publish.yml 的发布，免长期 token、自动 provenance
+#   （来源仓库须 public 才能生成 provenance）
+# - 权限最小化：contents: read + id-token: write（OIDC 签发所需）
+# - 版本一致性守卫：tag 版本必须与 package.json version 完全一致
+# - actions 按 SHA 固定
+name: publish
+
+on:
+  push:
+    tags:
+      - 'subagent-router-v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        # 注意：不加 registry-url。setup-node 的 registry-url 会写一个带占位
+        # _authToken 的 .npmrc（NODE_AUTH_TOKEN=XXXXX…），shadow 掉 OIDC 认证，
+        # 使 npm publish 走 token 路径而 E404。trusted publishing 纯靠
+        # id-token: write，无需 registry-url / NODE_AUTH_TOKEN。
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: 'Guard: tag version matches package.json'
+        run: |
+          EXPECTED="refs/tags/subagent-router-v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF" != "$EXPECTED" ]; then
+            echo "::error::tag/version mismatch: $GITHUB_REF vs $EXPECTED"
+            exit 1
+          fi
+      - name: Install
+        run: npm ci --legacy-peer-deps
+      - name: Verify (strict typecheck + unit tests + build)
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Publish to npm (OIDC trusted publishing)
+        # 升级 npm：trusted publishing 需 npm CLI >= 11.5.1（含 OIDC 登录支持）。
+        # OIDC 认证由 id-token: write 提供，无需 NODE_AUTH_TOKEN；provenance
+        # 依赖 public 源仓库。
+        run: |
+          npm install -g npm@latest
+          echo "npm version: $(npm --version)"
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "canary prerelease $VERSION → dist-tag next"
+            npm publish --access public --tag next --provenance --loglevel verbose
+          else
+            echo "stable $VERSION → dist-tag latest"
+            npm publish --access public --provenance --loglevel verbose
+          fi
