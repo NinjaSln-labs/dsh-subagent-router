@@ -80,7 +80,7 @@ export interface ModelPickerConfig {
   autoTierPolicy?: AutoTierPolicy
   /** Per-tier explicit candidate list, in priority order; when present, fully overrides the tier policy for that tier. */
   autoTierPicks?: Partial<Record<'trivial' | 'light' | 'standard' | 'complex', string[]>>
-  /** Classifier timeout for `subagent_recommend`'s one-shot LLM call, in milliseconds (default 15000). Past it the tool degrades to the naming heuristic. */
+  /** Classifier timeout for `subagent_recommend`'s one-shot LLM call, in milliseconds (default 8000). Past it the tool degrades to the naming heuristic. */
   recommendTimeoutMs?: number
 }
 
@@ -92,7 +92,7 @@ export const defaultConfig = {
   autoReroute: true,
   autoEscalationTiers: 1,
   autoProviderOrder: [] as string[],
-  recommendTimeoutMs: 15000,
+  recommendTimeoutMs: 8000,
 } as const satisfies Required<Pick<ModelPickerConfig, 'autoEscalate' | 'autoReroute' | 'autoEscalationTiers' | 'autoProviderOrder' | 'recommendTimeoutMs'>>
 
 /** The fully resolved config after defaults: per-tier picks and policy stay optional. */

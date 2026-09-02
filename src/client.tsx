@@ -148,7 +148,7 @@ const FIELDS: Field[] = [
   { id: 'autoEscalate', group: 'recovery', label: '失败时升级', hint: '前台运行失败后沿下一档自动重试一次。', kind: 'boolean', default: true, get: s => s.autoEscalate, set: (s, v) => ({ ...s, autoEscalate: v }) },
   { id: 'autoReroute', group: 'recovery', label: '终态失败换路', hint: '配额/鉴权失败时切换到健康提供方。', kind: 'boolean', default: true, get: s => s.autoReroute, set: (s, v) => ({ ...s, autoReroute: v }) },
   { id: 'autoEscalationTiers', group: 'recovery', label: '升级档数上限', hint: '同一提供方最多升级几步（0 表示不升级）。', kind: 'number', min: 0, get: s => s.autoEscalationTiers, set: (s, v) => ({ ...s, autoEscalationTiers: v }) },
-  { id: 'recommendTimeoutMs', group: 'scope', label: '推荐分类超时', hint: 'subagent_recommend 分类器的一次 LLM 调用超时（毫秒，默认 15000），超时自动降级到命名启发式。', kind: 'number', min: 100, get: s => s.recommendTimeoutMs, set: (s, v) => ({ ...s, recommendTimeoutMs: v }) },
+  { id: 'recommendTimeoutMs', group: 'scope', label: '推荐分类超时', hint: 'subagent_recommend 分类器的一次 LLM 调用超时（毫秒，默认 8000），超时自动降级到命名启发式。', kind: 'number', min: 100, get: s => s.recommendTimeoutMs, set: (s, v) => ({ ...s, recommendTimeoutMs: v }) },
 ]
 
 /** Group titles, in render order. */

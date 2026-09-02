@@ -62,7 +62,7 @@ bundle 只插入一行组合（`subagent-router`）。它消费 host 的 `tools`
 | `autoProviderOrder` | — | **provider 优先级**：`model: "auto"` 按此顺序解析 provider（未列出的排在之后）；父路由不健康或缺失时用它兜底。不配则用注册表顺序。 |
 | `autoTierPolicy` | — | **每档选型模式**：`{ trivial\|standard\|complex: 'anchor'\|'cheapest'\|'strongest' }`。`anchor`=父路由健康时沿用父模型；`cheapest`=目录里命名分最低；`strongest`=最高。未配的档位保持内置启发式。 |
 | `autoTierPicks` | — | **每档显式候选序**：`{ trivial\|standard\|complex: [modelId, ...] }`，完全覆盖该档选型；候选是全局模型优先级，按 provider 优先级顺序找，第一个被健康 provider 广告的模型胜出（可跨 provider）。 |
-| `recommendTimeoutMs` | `15000` | `subagent_recommend` 的一次性 LLM 分类调用超时（毫秒）；超时降级到命名启发式并说明原因。 |
+| `recommendTimeoutMs` | `8000` | `subagent_recommend` 的一次性 LLM 分类调用超时（毫秒）；超时降级到命名启发式并说明原因。 |
 
 **固定默认（不可配置）**：注册期行为固定为合理默认，不再暴露为配置项（早期版本这些字段可配但「保存」不生效，是陷阱）：
 

@@ -66,7 +66,7 @@ overridden by the settings UI user layer):
 | `autoProviderOrder` | — | **Provider priority**: `model: "auto"` resolves the provider in this order (unlisted ones sort after); it also backs the parent route when unhealthy or absent. Default: registry order. |
 | `autoTierPolicy` | — | **Per-tier selection mode**: `{ trivial\|standard\|complex: 'anchor'\|'cheapest'\|'strongest' }`. `anchor` keeps the parent model when its route is healthy; `cheapest`/`strongest` pick by naming score. Omitted tiers keep the built-in heuristic. |
 | `autoTierPicks` | — | **Per-tier explicit candidate order**: `{ trivial\|standard\|complex: [modelId, ...] }`, fully overrides that tier; candidates are a global model priority resolved in provider-priority order — the first one a healthy provider advertises wins (may cross providers). |
-| `recommendTimeoutMs` | `15000` | Timeout in milliseconds for `subagent_recommend`'s one-shot LLM classification call; past it the tool degrades to the naming heuristic with a reason. |
+| `recommendTimeoutMs` | `8000` | Timeout in milliseconds for `subagent_recommend`'s one-shot LLM classification call; past it the tool degrades to the naming heuristic with a reason. |
 
 **Fixed defaults (not configurable)**: registration-time behavior is fixed to
 sane defaults and no longer exposed as config — earlier versions made these
