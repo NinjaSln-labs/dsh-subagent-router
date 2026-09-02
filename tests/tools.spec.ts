@@ -1414,6 +1414,23 @@ describe('dsh-subagent-router config schema', () => {
     const withSnapshot = Config({ backgroundMode: 'one-shot' } as never)
     expect(withSnapshot.backgroundMode).toBe('one-shot')  // passthrough, inert
   })
+
+  it('unset tiers normalize to empty objects, not fake empty-array slots (HANDOFF 坑 8)', async () => {
+    // 根因回归：schemastery 的 required(false) 会把缺失键归一化成类型默认值
+    // （数组 → 空数组），导致用户从未配置 autoTierPicks 时归一化为
+    // `{trivial: [], light: [], standard: [], complex: []}`——client 端
+    // `picks !== undefined` 把空数组当成「固定」，UI 表现为「选默认保存后又回到
+    // 固定」。`default(undefined)` 让缺省键保持 undefined、整段保持 {}。
+    const { Config } = await import('../src/config.ts')
+    const empty = Config({})
+    expect(empty.autoTierPicks).toEqual({})
+    expect(empty.autoTierPolicy).toEqual({})
+    expect(empty.autoTierPicks.trivial).toBeUndefined()
+    // 真实配置的档位不受影响；其它档位缺省仍为 undefined（非空数组）。
+    const partial = Config({ autoTierPicks: { complex: ['x'] } })
+    expect(partial.autoTierPicks).toEqual({ complex: ['x'] })
+    expect(partial.autoTierPicks.trivial).toBeUndefined()
+  })
 })
 
 describe('dsh-subagent-router host settings integration', () => {

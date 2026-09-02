@@ -22,6 +22,20 @@ import z from '@deepseek-ai/schemastery'
 /** Per-tier auto selection mode. */
 const autoTierPolicyMode = z.union([z.const('anchor'), z.const('cheapest'), z.const('strongest')])
 
+/**
+ * 可选档位标量/数组：缺省保持 undefined（而非类型默认空值）。
+ *
+ * schemastery 的 `required(false)` 会把缺失键归一化成类型默认值（数组 → 空数组），
+ * 于是用户未配置任何档位时 `autoTierPicks` 归一化为
+ * `{trivial: [], light: [], standard: [], complex: []}`——client 端
+ * `picks !== undefined` 判定把「空数组」当成「固定」，造成「选默认保存后又回到固定」
+ * （HANDOFF 坑 8，2026-09-03 实机复现根因）。追加 `.default(undefined)` 让缺省键
+ * 保持 undefined、整段保持 `{}`，与 host `resolveConfig` 的透传语义一致
+ * （见文件头「双源警告」）。
+ */
+const optionalMode = autoTierPolicyMode.required(false).default(undefined as never)
+const optionalPicks = z.array(z.string()).required(false).default(undefined as never)
+
 /** Schemastery schema: documents the shape for the Loader and settings UI. */
 export const Config = z.object({
   /** After a failed foreground run, retry once on the next auto tier (default true). */
@@ -34,17 +48,17 @@ export const Config = z.object({
   autoProviderOrder: z.array(z.string()).default([]),
   /** Per-tier selection mode; omitted tiers fall back to the built-in heuristic (trivial→cheapest, light→balanced, standard→strong, complex→strongest). */
   autoTierPolicy: z.object({
-    trivial: autoTierPolicyMode.required(false),
-    light: autoTierPolicyMode.required(false),
-    standard: autoTierPolicyMode.required(false),
-    complex: autoTierPolicyMode.required(false),
+    trivial: optionalMode,
+    light: optionalMode,
+    standard: optionalMode,
+    complex: optionalMode,
   }).required(false),
   /** Per-tier explicit candidate list, in priority order; when present, fully overrides the tier policy for that tier. */
   autoTierPicks: z.object({
-    trivial: z.array(z.string()).required(false),
-    light: z.array(z.string()).required(false),
-    standard: z.array(z.string()).required(false),
-    complex: z.array(z.string()).required(false),
+    trivial: optionalPicks,
+    light: optionalPicks,
+    standard: optionalPicks,
+    complex: optionalPicks,
   }).required(false),
   /** Classifier timeout for `subagent_recommend`'s one-shot LLM call, in milliseconds (default 8000; range 1000–60000). Past it the tool degrades to the naming heuristic. */
   recommendTimeoutMs: z.number().min(1000).max(60000).default(8000),
