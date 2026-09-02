@@ -139,7 +139,7 @@ type FieldGroup = 'recovery' | 'scope'
 
 /** One typed field: id, label, kind, group, and the render control's value type. */
 type Field =
-  | { id: keyof Section; group: FieldGroup; label: string; hint?: string; kind: 'number'; min?: number; get: (s: Section) => number | undefined; set: (s: Section, v: number) => Section }
+  | { id: keyof Section; group: FieldGroup; label: string; hint?: string; kind: 'number'; min?: number; max?: number; get: (s: Section) => number | undefined; set: (s: Section, v: number) => Section }
   | { id: keyof Section; group: FieldGroup; label: string; hint?: string; kind: 'boolean'; default?: boolean; get: (s: Section) => boolean | undefined; set: (s: Section, v: boolean) => Section }
   | { id: keyof Section; group: FieldGroup; label: string; hint?: string; kind: 'text'; get: (s: Section) => string | undefined; set: (s: Section, v: string) => Section }
 
@@ -148,7 +148,7 @@ const FIELDS: Field[] = [
   { id: 'autoEscalate', group: 'recovery', label: '失败时升级', hint: '前台运行失败后沿下一档自动重试一次。', kind: 'boolean', default: true, get: s => s.autoEscalate, set: (s, v) => ({ ...s, autoEscalate: v }) },
   { id: 'autoReroute', group: 'recovery', label: '终态失败换路', hint: '配额/鉴权失败时切换到健康提供方。', kind: 'boolean', default: true, get: s => s.autoReroute, set: (s, v) => ({ ...s, autoReroute: v }) },
   { id: 'autoEscalationTiers', group: 'recovery', label: '升级档数上限', hint: '同一提供方最多升级几步（0 表示不升级）。', kind: 'number', min: 0, get: s => s.autoEscalationTiers, set: (s, v) => ({ ...s, autoEscalationTiers: v }) },
-  { id: 'recommendTimeoutMs', group: 'scope', label: '推荐分类超时', hint: 'subagent_recommend 分类器的一次 LLM 调用超时（毫秒，默认 8000），超时自动降级到命名启发式。', kind: 'number', min: 100, get: s => s.recommendTimeoutMs, set: (s, v) => ({ ...s, recommendTimeoutMs: v }) },
+  { id: 'recommendTimeoutMs', group: 'scope', label: '推荐分类超时', hint: 'subagent_recommend 分类器的一次 LLM 调用超时（毫秒，范围 1000–60000，默认 8000）；超时自动降级到命名启发式。', kind: 'number', min: 1000, max: 60000, get: s => s.recommendTimeoutMs, set: (s, v) => ({ ...s, recommendTimeoutMs: v }) },
 ]
 
 /** Group titles, in render order. */
@@ -169,6 +169,44 @@ const MODE_LABELS: Record<string, string> = {
   anchor: '锚定父模型',
   cheapest: '最便宜',
   strongest: '最强',
+}
+
+/** Free-editing numeric input: keeps a local draft while typing so the field
+ *  never freezes mid-edit, and commits on blur only when the value is a valid
+ *  number within [min, max] (out-of-range/invalid input snaps back). */
+function NumberControl(props: {
+  id: string
+  disabled: boolean
+  min?: number
+  max?: number
+  current: number | undefined
+  onCommit: (n: number) => void
+}): React.ReactElement {
+  const { id, disabled, min, max, current, onCommit } = props
+  const [draft, setDraft] = React.useState<string | null>(null)
+  const display = draft !== null ? draft : current === undefined ? '' : String(current)
+  const commit = (): void => {
+    const text = draft
+    setDraft(null)
+    if (text === null || text === '') return
+    const n = Number(text)
+    if (Number.isNaN(n)) return
+    if (min !== undefined && n < min) return
+    if (max !== undefined && n > max) return
+    onCommit(n)
+  }
+  return React.createElement('input', {
+    id,
+    className: 'sr-input',
+    type: 'number',
+    ...(min !== undefined ? { min } : {}),
+    ...(max !== undefined ? { max } : {}),
+    value: display,
+    disabled,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value),
+    onBlur: commit,
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() },
+  })
 }
 
 /** Render one control for a field; edits flow to the parent via `onEdit`. */
@@ -198,21 +236,16 @@ function FieldControl(props: {
       )
     }
     case 'number': {
-      const current = field.get(value)
       return React.createElement('div', { className: 'sr-field' },
         React.createElement('label', { className: 'sr-label', htmlFor: `sr-${String(field.id)}` }, field.label),
         React.createElement('div', { className: 'sr-control' },
-          React.createElement('input', {
+          React.createElement(NumberControl, {
             id: `sr-${String(field.id)}`,
-            className: 'sr-input',
-            type: 'number',
-            ...(field.min !== undefined ? { min: field.min } : {}),
-            value: current === undefined ? '' : String(current),
             disabled,
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-              const n = Number(e.target.value)
-              if (!Number.isNaN(n) && (field.min === undefined || n >= field.min)) onEdit(field.set(value, n))
-            },
+            min: field.min,
+            max: field.max,
+            current: field.get(value),
+            onCommit: (n) => onEdit(field.set(value, n)),
           }),
         ),
         hint,
