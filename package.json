@@ -1,7 +1,7 @@
 {
   "name": "dsh-subagent-router",
   "description": "Model-routed subagent delegation for DeepSeek Harness: a `subagent_model` tool with per-call provider/model/max_tokens overrides and a built-in `model: \"auto\"` routing policy (anchored to the parent's own model by default; task-tier upgrades, failure escalation, auditable reason), plus a `subagent_models` catalog tool. Children no longer need to inherit the parent's model.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": {
     "name": "ninjasln",
     "url": "https://github.com/NinjaSln-labs"
