@@ -163,12 +163,13 @@ const TIER_LABELS: Array<['trivial' | 'standard' | 'complex', string]> = [
   ['standard', '普通'],
   ['complex', '复杂'],
 ]
-const MODE_OPTIONS = ['', 'anchor', 'cheapest', 'strongest']
+const MODE_OPTIONS = ['', 'anchor', 'cheapest', 'strongest', 'fixed']
 const MODE_LABELS: Record<string, string> = {
   '': '默认（内置启发式）',
   anchor: '锚定父模型',
   cheapest: '最便宜',
   strongest: '最强',
+  fixed: '固定（手动选候选模型）',
 }
 
 /** Free-editing numeric input: keeps a local draft while typing so the field
@@ -367,14 +368,23 @@ function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElem
   const onTierEdit = (tier: 'trivial' | 'standard' | 'complex', mode: string): void => {
     setDraft(prev => {
       const base = prev ?? committed
-      const current = base.autoTierPolicy ?? {}
-      const next = { ...current }
-      if (mode === '') {
-        delete next[tier]
+      const policy = { ...(base.autoTierPolicy ?? {}) }
+      const picks = { ...(base.autoTierPicks ?? {}) }
+      if (mode === 'fixed') {
+        // 固定：保留/初始化该档候选清单，选型模式留空（候选清单完全覆盖）。
+        if (picks[tier] === undefined) picks[tier] = []
+        delete policy[tier]
       } else {
-        next[tier] = mode as 'anchor' | 'cheapest' | 'strongest'
+        // 其它模式（默认/锚定/最便宜/最强）：设 policy，清除该档候选清单。
+        if (mode === '') delete policy[tier]
+        else policy[tier] = mode as 'anchor' | 'cheapest' | 'strongest'
+        delete picks[tier]
       }
-      return { ...base, autoTierPolicy: Object.keys(next).length > 0 ? next : undefined }
+      return {
+        ...base,
+        autoTierPolicy: Object.keys(policy).length > 0 ? policy : undefined,
+        autoTierPicks: Object.keys(picks).length > 0 ? picks : undefined,
+      }
     })
   }
   const onTierPicksEdit = (tier: 'trivial' | 'standard' | 'complex', parts: string[]): void => {
@@ -482,9 +492,11 @@ function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElem
         ]
         if (group.id === 'tier') {
           nodes.push(...TIER_LABELS.map(([tier, label]) => {
-            const current = value.autoTierPolicy?.[tier] ?? ''
+            // 一个档位一个「选型策略」下拉；选「固定」才展开候选模型选择器。
+            const picks = value.autoTierPicks?.[tier]
+            const current = picks !== undefined ? 'fixed' : (value.autoTierPolicy?.[tier] ?? '')
             return React.createElement('div', { className: 'sr-field', key: `tier-${tier}` },
-              React.createElement('label', { className: 'sr-label', htmlFor: `sr-tier-${tier}` }, `${label}任务选型模式`),
+              React.createElement('label', { className: 'sr-label', htmlFor: `sr-tier-${tier}` }, `${label}任务选型策略`),
               React.createElement('div', { className: 'sr-control' },
                 React.createElement('select', {
                   id: `sr-tier-${tier}`,
@@ -496,24 +508,24 @@ function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElem
                   React.createElement('option', { key: option, value: option }, MODE_LABELS[option] ?? option))),
               ),
               React.createElement('div', { className: 'sr-hint' },
-                `${label}任务的选型模式（默认 = 内置启发式）。`),
-            )
-          }))
-          nodes.push(...TIER_LABELS.map(([tier, label]) => {
-            return React.createElement('div', { className: 'sr-field', key: `picks-${tier}` },
-              React.createElement('label', { className: 'sr-label' }, `${label}任务候选模型`),
-              React.createElement(OrderedPicker, {
-                candidates: modelCandidates,
-                selected: value.autoTierPicks?.[tier] ?? [],
-                onChange: (next) => onTierPicksEdit(tier, next),
-                disabled,
-                placeholder: '选择候选模型',
-                max: 12,
-              }),
-              React.createElement('div', { className: 'sr-hint' },
-                catalog.status === 'error'
-                  ? '目录不可用，无法列出模型。'
-                  : `覆盖${label}任务选型：按序选第一个被健康提供方广告的模型（可跨提供方）。`),
+                current === 'fixed'
+                  ? `${label}任务已固定候选模型：按下方清单顺序选第一个被健康提供方广告的模型（覆盖上方选型策略）。`
+                  : `${label}任务的选型策略（默认 = 内置启发式；固定 = 手动选候选模型）。`),
+              current === 'fixed'
+                ? React.createElement(React.Fragment, null,
+                    React.createElement(OrderedPicker, {
+                      candidates: modelCandidates,
+                      selected: value.autoTierPicks?.[tier] ?? [],
+                      onChange: (next) => onTierPicksEdit(tier, next),
+                      disabled,
+                      placeholder: '选择候选模型',
+                      max: 12,
+                    }),
+                    catalog.status === 'error'
+                      ? React.createElement('div', { className: 'sr-hint' }, '目录不可用，无法列出模型。')
+                      : null,
+                  )
+                : null,
             )
           }))
         } else {
