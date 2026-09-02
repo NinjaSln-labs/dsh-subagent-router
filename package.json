@@ -53,6 +53,7 @@
     "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit || true",
     "test": "vitest run",
+    "mount": "node scripts/mount.mjs",
     "check:deploy": "node scripts/check-deploy.mjs"
   },
   "dependencies": {

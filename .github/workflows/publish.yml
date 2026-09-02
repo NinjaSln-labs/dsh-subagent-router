@@ -48,11 +48,12 @@ jobs:
           fi
       - name: Install
         run: npm ci --legacy-peer-deps
-      - name: Verify (strict typecheck + unit tests + build)
+      - name: Verify (strict typecheck + unit tests + build + mount)
         run: |
           npm run typecheck
           npm test
           npm run build
+          npm run mount
       - name: Publish to npm (OIDC trusted publishing)
         # 升级 npm：trusted publishing 需 npm CLI >= 11.5.1（含 OIDC 登录支持）。
         # OIDC 认证由 id-token: write 提供，无需 NODE_AUTH_TOKEN；provenance
