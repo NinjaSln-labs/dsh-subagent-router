@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 
-const registrations = { tools: [] }
+const registrations = { tools: [], routes: [] }
 
 const ctx = new Context()
 ctx.provide('tools', {
@@ -41,6 +41,13 @@ ctx.provide('subagents', {
   getProvider: name => (name === 'spawn' ? provider : undefined),
 })
 ctx.provide('systemPrompt', { section: () => {} })
+// webServer stub captures the catalog RPC route so this test can drive it.
+ctx.provide('webServer', {
+  register: route => {
+    registrations.routes.push(route)
+    return () => {}
+  },
+})
 // Stub llm: two provider routes, one of which advertises a strong model — so
 // the `subagent_models` catalog tool has real data to render.
 ctx.provide('llm', {
@@ -102,6 +109,39 @@ try {
   assert.equal(unknown.providers.length, 0)
   assert.ok(String(unknown.note).includes('deepseek-official'))
   console.log('  ok  unknown provider narrowing reports the registered routes')
+
+  // 4) the config-panel catalog RPC route is registered and serves the same
+  // provider+model directory over the webServer seam (fix: the panel no longer
+  // depends on a non-existent `llm.models` Remote).
+  const catalogRoute = registrations.routes.find(r => r.path === '/subagent-router-rpc')
+  assert.ok(catalogRoute, 'catalog RPC route registered')
+  assert.equal(catalogRoute.kind, 'exact')
+  const res = { status: null, body: null, writeHead(s, h) { this.status = s; this.headers = h }, end(b) { this.body = b } }
+  const req = {
+    method: 'POST',
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { host: '127.0.0.1:3080' },
+  }
+  req[Symbol.asyncIterator] = async function* () { yield JSON.stringify({ method: 'catalog' }) }
+  await catalogRoute.handler(req, res)
+  assert.equal(res.status, 200)
+  const payload = JSON.parse(res.body)
+  assert.equal(payload.ok, true)
+  const groups = payload.result.groups
+  assert.equal(groups.length, 2, 'catalog RPC lists both provider routes')
+  assert.equal(groups[0].id, 'deepseek-official')
+  assert.equal(groups[0].models.length, 2)
+  assert.equal(groups[1].id, 'pi-ai-cn')
+  assert.equal(groups[1].models[0].id, 'pi-3-maxi')
+  console.log('  ok  /subagent-router-rpc catalog route serves the provider/model directory')
+
+  // 5) non-loopback peer is refused (fail-closed).
+  const evil = { status: null, body: null, writeHead(s) { this.status = s }, end(b) { this.body = b } }
+  const evilReq = { method: 'POST', socket: { remoteAddress: '203.0.113.5' }, headers: { host: 'evil.com' } }
+  evilReq[Symbol.asyncIterator] = async function* () { yield '{}' }
+  await catalogRoute.handler(evilReq, evil)
+  assert.equal(evil.status, 403, 'non-loopback catalog RPC is refused')
+  console.log('  ok  catalog RPC refuses non-loopback peers')
 
   console.log('\nmount smoke passed')
   process.exit(0)

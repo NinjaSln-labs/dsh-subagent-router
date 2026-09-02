@@ -46,20 +46,27 @@ type Section = {
   recommendTimeoutMs?: number
 }
 
-/** Host model-directory wire face (session-independent; `llm.models`). */
-type CatalogApi = {
-  llm?: {
-    models?: (request: {}) => Promise<{
-      result: { ok: boolean; value?: { groups: Array<{ id: string; name: string; models: Array<{ id: string; name: string }> }> } }
-    }>
-  }
-}
+/** Host model-directory RPC (aggregated host-side; see src/catalog.ts). */
+const CATALOG_RPC_PATH = '/subagent-router-rpc'
 
 /** Loaded directory snapshot handed to the pickers. */
 type Catalog = {
   status: 'loading' | 'ready' | 'error'
   /** Provider groups (id → name + models). */
   groups: Array<{ id: string; name: string; models: Array<{ id: string; name: string }> }>
+}
+
+/** Fetch the live provider/model directory from the host RPC route. */
+async function fetchCatalog(signal: AbortSignal): Promise<Catalog> {
+  const res = await fetch(CATALOG_RPC_PATH, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ method: 'catalog' }),
+    signal,
+  })
+  const data = await res.json() as { ok?: boolean; result?: { groups?: Catalog['groups'] }; error?: string }
+  if (!data.ok) throw new Error(data.error ?? 'catalog rpc failed')
+  return { status: 'ready', groups: data.result?.groups ?? [] }
 }
 
 /**
@@ -291,8 +298,8 @@ function OrderedPicker(props: {
 }
 
 /** The settings Plugins-section card for dsh-subagent-router. */
-function SettingsCard(props: { scope: SettingsScope<Section>; api?: CatalogApi }): React.ReactElement {
-  const { scope, api } = props
+function SettingsCard(props: { scope: SettingsScope<Section> }): React.ReactElement {
+  const { scope } = props
   const [snapshot, setSnapshot] = React.useState<SettingsScopeSnapshot<Section>>(scope.getSnapshot())
   const [open, setOpen] = React.useState(false)
   const [draft, setDraft] = React.useState<Section | null>(null)
@@ -300,28 +307,14 @@ function SettingsCard(props: { scope: SettingsScope<Section>; api?: CatalogApi }
   const [catalog, setCatalog] = React.useState<Catalog>({ status: 'loading', groups: [] })
   React.useEffect(() => scope.subscribe(() => setSnapshot(scope.getSnapshot())), [scope])
   React.useEffect(() => {
+    const controller = new AbortController()
     let alive = true
-    if (api?.llm?.models === undefined) {
-      setCatalog({ status: 'error', groups: [] })
-      return
-    }
-    void api.llm.models({}).then(
-      (resolved) => {
-        if (!alive) return
-        const groups = resolved.result.ok && resolved.result.value !== undefined ? resolved.result.value.groups : []
-        setCatalog({
-          status: 'ready',
-          groups: groups.map(group => ({
-            id: group.id,
-            name: group.name,
-            models: group.models.map(model => ({ id: model.id, name: model.name })),
-          })),
-        })
-      },
+    void fetchCatalog(controller.signal).then(
+      (loaded) => { if (alive) setCatalog(loaded) },
       () => { if (alive) setCatalog({ status: 'error', groups: [] }) },
     )
-    return () => { alive = false }
-  }, [api])
+    return () => { alive = false; controller.abort() }
+  }, [])
   const committed = snapshot.value ?? ({} as Section)
   // Editing view = draft when present (unsaved edits), else the committed value.
   const value = draft ?? committed
@@ -542,7 +535,7 @@ function SettingsCard(props: { scope: SettingsScope<Section>; api?: CatalogApi }
 
 export const name = 'dsh-subagent-router'
 
-export const inject = ['slots', 'settingsScope', 'connection']
+export const inject = ['slots', 'settingsScope']
 
 /** Client entry: register the settings Plugins-section card for the namespace. */
 export function apply(ctx: ClientContext): void {
@@ -552,12 +545,11 @@ export function apply(ctx: ClientContext): void {
     settingsScope: { bind(spec: { namespace: string }): SettingsScope<Section> }
   }).settingsScope
   const scope = settingsScope.bind({ namespace: 'subagent-router' })
-  // Host model-directory wire face (`llm.models`, session-independent) — feeds
-  // the provider/model pickers so users never hand-type ids. `connection` is
-  // the client wire handle; `.api` carries the host API proxy faces.
-  const api = (ctx as unknown as { connection?: { api?: CatalogApi } }).connection?.api
+  // The provider/model pickers fetch the live model directory from the host
+  // RPC route (see src/catalog.ts) — a bundle client cannot call the host
+  // `llm` service's bulk catalog directly.
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register(
     { name: 'settings.plugin.item', key: 'subagent-router' } as never,
-    () => React.createElement(SettingsCard, { scope, api }),
+    () => React.createElement(SettingsCard, { scope }),
   ) as never)
 }

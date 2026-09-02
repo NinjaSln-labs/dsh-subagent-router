@@ -49,6 +49,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 // import so the module's `declare module` is still seen by the type system.
 import '@deepseek-ai/dsh-settings'
 import { registerModelPickerTools } from './tools.ts'
+import { registerCatalogRpc } from './catalog.ts'
 import { Config, fixedConfig } from './config.ts'
 export { Config } from './config.ts'
 
@@ -197,6 +198,11 @@ export function apply(ctx: Context, config: ModelPickerConfig = {}): void {
         : `Use ${fixedConfig.toolName} in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set \`run_in_background: false\` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.`,
     })
   }
+
+  // Host-side catalog RPC for the config panel's provider/model pickers (the
+  // host llm service exposes no bulk providers-with-models Remote to a bundle
+  // client, so this half aggregates it over the webServer route seam).
+  registerCatalogRpc(ctx)
 }
 
 export default {
