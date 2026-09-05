@@ -48,11 +48,12 @@
     "README.en.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/build-client.mjs",
+    "build": "node scripts/build.mjs",
     "build:client": "node scripts/build-client.mjs",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run verify",
     "typecheck": "tsc -p tsconfig.json --noEmit || true",
     "test": "vitest run",
+    "verify": "node scripts/verify.mjs",
     "mount": "node scripts/mount.mjs",
     "check:deploy": "node scripts/check-deploy.mjs"
   },
