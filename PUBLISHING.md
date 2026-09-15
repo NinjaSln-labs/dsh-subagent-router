@@ -1,6 +1,6 @@
 # 发布记录：dsh-subagent-router
 
-**已发布**（GitHub + npm）：`dsh-subagent-router@0.5.0`（latest，CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
+**已发布**（GitHub + npm）：`dsh-subagent-router@0.5.1`（latest，CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
 
 ## 发布状态（2026-09 单库化更新）
 
@@ -9,13 +9,23 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | ✅ `dsh-subagent-router@0.5.0`（latest，CI 自动发布）· `0.4.0` · `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
-| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.5.0`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
+| npm | ✅ `dsh-subagent-router@0.5.1`（latest，CI 自动发布）· `0.5.0` · `0.4.0` · `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
+| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.5.1`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
-| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
-| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次） |
+| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.1`，见 HANDOFF §3.1（本地私有，未追踪）） |
+| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次；0.5.1 第五次） |
 
 ## 版本历史
+
+- **0.5.1** — **devDependencies 精确 pin，阻断 caret 跨 rc 漂移**（本单库发布；无运行时变化）：
+  - 0.5.0 发布后验证发现**双版本漂移**：宿主 dsh 安装于 rc.1 发布后（冻结在 rc.1），rc.2 于同日稍晚发布，此后按 `^0.1.5-rc.1` 解析一律落 rc.2 → lockfile 实测 `dsh-llm`/`dsh-tools`/`dsh-settings`/`dsh-subagent`/`dsh-jobs` 全为 rc.2
+  - 根因：**peerDependencies 的"宽松"语义被借给了 devDependencies**——前者是给消费者的兼容范围（该宽松），后者是构建输入（该精确可复现）；两者同串 `^0.1.5-rc.1` 导致语义冲突
+  - 后果：`npm run verify` 面对 rc.2 类型、宿主跑 rc.1，验证保真度偏差；若 rc.3 出现 breaking change 会在 verify 全绿下踩雷
+  - 修法：25 项 `@deepseek-ai/*` devDeps 全部 pin 精确版本（24 项 `dsh-*` → `0.1.5-rc.1`、`cordis` → `4.0.2`，均 = 宿主实装）；`react` / `@types/*` / `esbuild` / `typescript` / `vitest` 保持原样（独立生态与构建工具）
+  - **`peerDependencies` 全段零改动**（仍 `^0.1.5-rc.1` / `^4.0.2` / `^18.2.0`）——普通用户端不受影响
+  - **未改任何 `src/*.ts`**——插件公开 API 与运行时行为完全不变；仅 devDeps 元数据 + lockfile
+  - 验证：`npm install` 后 devDeps 实装全部 rc.1 与宿主一致；`npm run verify` 4 步全绿（**验证链首次真正跑在 rc.1 上**）+ check:deploy FAIL 0
+  - 后续约定：真实宿主升级时 devDependencies 再同步跟上
 
 - **0.5.0** — **宿主 dsh 0.1.5-rc.1 升级适配（peer 基线整体迁移，对旧宿主线不兼容）**（本单库发布）：
   - peer/devDeps 全线 → `^0.1.5-rc.1`（cordis 仍 `^4.0.2`）：旧 `^0.1.2-alpha.4` 被宿主实际版本击穿——semver 实测 `0.1.5-rc.1` 不满足 `^0.1.2-alpha.4`（prerelease 仅同号段可比），与 `0cc33e1`「peer 对齐」同一触发条件
