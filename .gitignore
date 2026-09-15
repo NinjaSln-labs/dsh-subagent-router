@@ -10,3 +10,6 @@ HANDOFF-ARCHIVE/
 
 # commit-msg 钩子含本地私有身份检查，不追踪（pre-commit 随仓库分发）
 .githooks/commit-msg
+
+# 本机审计工具输出（repo-audit 快照，含本机路径/日期等本机信息，不入库）
+audit-report/

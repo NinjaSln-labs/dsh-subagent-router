@@ -40,3 +40,7 @@ dsh-subagent-router——DeepSeek Harness 的模型路由子代理委派插件�
 5. **本机私有信息不入库**：本机绝对路径（如 `/home/<user>`、`/mnt/<盘>`、`/Users/<user>`）、个人邮箱、token/密钥、本地部署实况快照（"当前 profile 装的是 X 版本"类会过时的描述）一律不写入入库文件；属本机特有的配置文件（如 `.githooks/commit-msg`）只留本地并 ignore。末尾目录名（无完整路径）等不构成泄露。
 
 > 单库说明：本仓库 2026-09 从 dsh-plugins monorepo 迁出，仓库根即插件目录。monorepo 时代的根级 `pnpm-workspace.yaml` + `overrides`（多包防双实例护栏）**本单库不需要**（单一包非 workspace）；peer 版本兼容由宿主 dsh 决定，peerDependencies 如实声明即可。git 钩子在 `.githooks/`（启用：`git config core.hooksPath .githooks`）。
+
+## 本仓裁决记录（repo-local，不随 AGENTS-core 模板再生）
+
+- **CC 前缀豁免（2026-09-10，repo-audit GIT-001 裁决）**：历史合并提交 `merge(dsh-subagent-router): …`（`4465d9d`）豁免「提交规范」的 Conventional Commits 前缀要求；不为此改写历史，新增提交一律仍用 CC 前缀。
