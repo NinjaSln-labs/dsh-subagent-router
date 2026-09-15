@@ -1,6 +1,6 @@
 # 发布记录：dsh-subagent-router
 
-**已发布**（GitHub + npm）：`dsh-subagent-router@0.3.0`（latest，git CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
+**已发布**（GitHub + npm）：`dsh-subagent-router@0.5.0`（latest，CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
 
 ## 发布状态（2026-09 单库化更新）
 
@@ -9,13 +9,22 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | ✅ `dsh-subagent-router@0.4.0`（latest，CI 自动发布）· `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
-| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.4.0`（本单库首个）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
+| npm | ✅ `dsh-subagent-router@0.5.0`（latest，CI 自动发布）· `0.4.0` · `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
+| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.5.0`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
-| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.4.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
-| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**） |
+| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.0`，见 HANDOFF §3.1（本地私有，未追踪）） |
+| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次） |
 
 ## 版本历史
+
+- **0.5.0** — **宿主 dsh 0.1.5-rc.1 升级适配（peer 基线整体迁移，对旧宿主线不兼容）**（本单库发布）：
+  - peer/devDeps 全线 → `^0.1.5-rc.1`（cordis 仍 `^4.0.2`）：旧 `^0.1.2-alpha.4` 被宿主实际版本击穿——semver 实测 `0.1.5-rc.1` 不满足 `^0.1.2-alpha.4`（prerelease 仅同号段可比），与 `0cc33e1`「peer 对齐」同一触发条件
+  - **废弃包 `@deepseek-ai/dsh-client-runtime` 四处全清**（peerDependencies / devDependencies / `dsh.client.inject` / build EXTERNAL）：该包 npm 上限 0.1.1-rc.2、0.1.5 线不存在，也不在任何 dsh.client roster 行
+  - client 类型来源迁移：`ClientContext` = `import type { Context } from '@deepseek-ai/cordis'`（0.1.5 线官方统一写法）、`SettingsScope` / `SettingsScopeSnapshot` ← `dsh-client-ui-settings/client`、`ctx.slots` ← `dsh-client-ui-renderer` 对 cordis `Context` 的增广（需侧效应 `import type {}` 拉入，与既有 ui-slots workaround 同型）→ 顺带删掉为此存在的两处 `as never` 强转，恢复类型检查
+  - 验证链门禁修复（`58a3429`）：`npm run typecheck` 原脚本体带 `|| true`，`scripts/verify.mjs` 按退出码判 PASS → 空转门禁（真错误全被吞）；删之
+  - **未改任何 host 侧 `src/*.ts`**——插件公开 API 与运行时行为不变；仅 client 半类型 + 依赖元数据 + 打包配置
+  - 验证：tsc 0 报错 + 132/132 vitest + build + mount 全绿 + check:deploy FAIL 0 + Playwright 实机（设置 → Plugins 卡渲染、展开后 select 5 / input 4、页面与控制台错误 0）
+  - 发布前置：profile 重装（+1/-4，死包及依赖已从 profile 清除）+ dsh 重启（boot 后模块图本插件行 `inject` 为新清单）
 
 - **0.4.0** — **单库化后首个版本 + peer 对齐宿主 alpha + 配置面板修复闭环**（本单库发布）：
   - 单库迁移：dsh-plugins monorepo → `NinjaSln-labs/dsh-subagent-router` 独立仓库（subtree split 保留历史）；check:deploy + pre-commit 部署纪律落地
