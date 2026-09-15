@@ -13,16 +13,25 @@
  * snapshot replacements on committed document changes.
  */
 import * as React from 'react'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 // Side-effect type import: pulls the augmented module into the program so the
 // `declare module` below can merge into its SlotMap interface. Under
 // `skipLibCheck` TS does not chase the .d.ts imports that reference this
-// module (e.g. dsh-client-runtime's slots types), so without this import the
-// augmentation fails with TS2664 "module cannot be found" in a clean install.
-// Type-only -> erased at bundle time; ui-slots stays external at runtime.
+// module (e.g. dsh-client-ui-renderer's slot registry types), so without this
+// import the augmentation fails with TS2664 "module cannot be found" in a clean
+// install. Type-only -> erased at bundle time; ui-slots stays external at
+// runtime (a kernel-seeded module, not a plugin graph row).
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+
+// Side-effect type import: pulls dsh-client-ui-renderer's `declare module
+// '@deepseek-ai/cordis'` augmentation into the program — that is what types
+// `ctx.slots` on the client Context. Same skipLibCheck blindness as ui-slots
+// above: the renderer's registry types are only reachable through a .d.ts
+// import chain TS will not chase, so without this import `ctx.slots` is
+// reported missing. Type-only -> erased at bundle time.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
@@ -595,7 +604,7 @@ export function apply(ctx: ClientContext): void {
   // RPC route (see src/catalog.ts) — a bundle client cannot call the host
   // `llm` service's bulk catalog directly.
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register(
-    { name: 'settings.plugin.item', key: 'subagent-router' } as never,
+    { name: 'settings.plugin.item', key: 'subagent-router' },
     () => React.createElement(SettingsCard, { scope }),
-  ) as never)
+  ))
 }

@@ -25,7 +25,6 @@ const EXTERNAL = [
   '@deepseek-ai/dsh-client-web-react',
   '@deepseek-ai/dsh-client-ui-attachment',
   '@deepseek-ai/dsh-client-schema-form',
-  '@deepseek-ai/dsh-client-runtime/client',
   '@deepseek-ai/dsh-client-ui-settings-plugins/client',
 ]
 
