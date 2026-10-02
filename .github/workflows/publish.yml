@@ -2,6 +2,8 @@
 #
 # 安全模型（2026-09 单库化，从 monorepo 的 NPM_TOKEN + 人工审批迁移到 OIDC）：
 # - 触发 = 本机人工创建的 tag（subagent-router-vX.Y.Z），发布决策永远是人的决定
+# - 第二道闸 = environment `npm-publish` 的 required reviewers：tag 推送后 job
+#   停在 "Waiting for review"，人工批准才执行 publish（防 tag 误推直接发版）
 # - 认证：npm Trusted Publishing（OIDC）——npmjs.com 包设置里配置的 trusted
 #   publisher 只接受本仓库 publish.yml 的发布，免长期 token、自动 provenance
 #   （来源仓库须 public 才能生成 provenance）
@@ -26,6 +28,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # 人工审批闸：environment `npm-publish` 配了 required reviewers，
+    # job 会停在 "Waiting for review" 直到批准才真正 publish（GitHub 侧保护规则）。
+    environment: npm-publish
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
