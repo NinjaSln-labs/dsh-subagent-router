@@ -13,7 +13,7 @@
 | GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.6.0`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
 | profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.1`，见 `.handoff/` 存储 status 槽（本地私有，未追踪）） |
-| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次；0.5.1 第五次；**0.6.0 第六次**） |
+| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次；0.5.1 第五次；0.6.0 第六次）· 0.6.0 后加回人工审批闸：environment `npm-publish` required reviewers + job `environment:` 绑定（tag 推送后停在 Waiting for review） |
 
 ## 版本历史
 
