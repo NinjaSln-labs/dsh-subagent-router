@@ -7,13 +7,6 @@
 
 dsh-subagent-router——DeepSeek Harness 的模型路由子代理委派插件（`subagent_model` / `subagent_models` / `subagent_recommend`）；仓库根即工程根；分支、提交、验证、发版规范见下与 CONTRIBUTING.md。
 
-## 交接（未决项只写 `.handoff/`）
-
-- **唯一真源**：未决项（待办 / 坑 / 决策 / 下一步）只写 `.handoff/` 存储，**经 `handoff` CLI**（`add` / `close` / `set` / `next`…），禁在 README / ROADMAP / 别处另立待办文本（防双源漂移）。旧布局（`HANDOFF.md` / `HANDOFF-ARCHIVE/`）已迁入 `.handoff/legacy/`，为只读历史，不作真源。
-- **接手 / 收尾**：开工前 `handoff view` + `handoff next` 恢复上下文；门禁 `handoff check` 为交接完整性判据，不过不得前进。
-- **范围登记**：未决项可能落在的活体卷由 `handoff scope` 登记（本仓：`docs/ROADMAP.md`）；表外文件契约上不承载未决项。
-- **私有**：`.handoff/` 经 `.gitignore` 保持本机私有，不入库。
-
 ## 提交规范
 
 - **Conventional Commits 前缀 + 中文描述**：`feat(scope):` / `fix(scope):` / `refactor:` / `docs:` / `test:` / `chore:`；scope 用模块名；发布提交固定 `chore: release v<版本>`。
@@ -51,3 +44,12 @@ dsh-subagent-router——DeepSeek Harness 的模型路由子代理委派插件�
 ## 本仓裁决记录（repo-local，不随 AGENTS-core 模板再生）
 
 - **CC 前缀豁免（2026-09-10，repo-audit GIT-001 裁决）**：历史合并提交 `merge(dsh-subagent-router): …`（`4465d9d`）豁免「提交规范」的 Conventional Commits 前缀要求；不为此改写历史，新增提交一律仍用 CC 前缀。
+
+## 交接
+
+<!-- handoff:begin -->
+- 条目只经 project-handoff 技能自带的 CLI 写（手改绕过门禁）；存储索引由脚本重建，勿手写。
+- 收尾前跑该技能的 `check`（校验**结构**：各槽数量、status 闭集、引用闭合）。`check rc=0` 只说明结构没问题，**不代表交接内容是实况**。
+- 本轮有实质改动（闭条目／开条目／换 next）时刷新 `exit`；`exit`/`summary` 是给下一班的**陈述**，不是历史记录。
+- 提及已闭条目时写 `t000095（已闭）` 这类显式标记——已闭与未闭不能靠读者推断。
+<!-- handoff:end -->
