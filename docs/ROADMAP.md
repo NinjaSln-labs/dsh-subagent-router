@@ -1,6 +1,6 @@
 # dsh-subagent-router — Roadmap
 
-状态基准：**v0.3.0**（2026-08-27 发布，git CI 管道跑通）。本文件是路线图的**唯一权威来源（单源）**；`HANDOFF.md`（本地私有，未追踪） / `PUBLISHING.md` / `README.md` 只记录 delta 并引用本文件，不复制路线内容。
+状态基准：**v0.3.0**（2026-08-27 发布，git CI 管道跑通）。本文件是路线图的**唯一权威来源（单源）**；`.handoff/` 存储（本地私有，未追踪） / `PUBLISHING.md` / `README.md` 只记录 delta 并引用本文件，不复制路线内容。
 
 ## 已交付（到 v0.3.0）
 
@@ -34,7 +34,7 @@
 
 | # | 项 | 优先级 | 动机 / 价值 | 依赖 |
 |---|---|---|---|---|
-| 1a | ~~`backgroundMode: continuable` 运行时实测~~ → **✅ 已完成（2026-08-27）**：base 层（profile cordis.patch.yml）`backgroundMode: continuable` + 重启 → `subagent_model` 默认返回 `kind:'continuable'` + 持久 `subagentId` → `send_message` 同会话续聊成功（第二轮回执「send_message 续聊 OK」）· spawn provider `prepareContinuable` 前提✅ · 前台路径✅ · one-shot 后台 jobs 通道✅ · 工具描述✅ · **关键机制发现**：`backgroundMode` 是注册期快照，`installSettingsSection` 的 `setSource` 异步注入晚于 `apply()` 冻结——用户层/设置页对该字段无效，**必须写 base 层**（详见 HANDOFF §4 坑 10（本地私有，未追踪）） | P0 | 后台委派是主力场景，不能只靠单测；验证 startContinuable 路径 + 工具描述 | — |
+| 1a | ~~`backgroundMode: continuable` 运行时实测~~ → **✅ 已完成（2026-08-27）**：base 层（profile cordis.patch.yml）`backgroundMode: continuable` + 重启 → `subagent_model` 默认返回 `kind:'continuable'` + 持久 `subagentId` → `send_message` 同会话续聊成功（第二轮回执「send_message 续聊 OK」）· spawn provider `prepareContinuable` 前提✅ · 前台路径✅ · one-shot 后台 jobs 通道✅ · 工具描述✅ · **关键机制发现**：`backgroundMode` 是注册期快照，`installSettingsSection` 的 `setSource` 异步注入晚于 `apply()` 冻结——用户层/设置页对该字段无效，**必须写 base 层**（详见 `.handoff/` 坑记录 10（本地私有，未追踪）） | P0 | 后台委派是主力场景，不能只靠单测；验证 startContinuable 路径 + 工具描述 | — |
 | 1b | ~~profile 级 config 覆盖实测~~ → **✅ 已完成**：设置页 UI（设置 → 插件配置）实现并验证（host settings 命名空间 + client 卡片 + 实时生效，见 PLAN-settings-ui.md） | P1 | 配置面闭环，堵静默失效 | — |
 | 1c | ~~目录元数据~~ → **✅ 已完成（2026-08-27，`fb14814`）**：`subagent_models` 每个模型加派生元数据（`cost` 成本档 / `speed` 速度档 / `strength` 强度档 / `specialty` 特长 / `contextWindow` 已知模型上下文窗口）——零外部依赖，命名启发式 + 内置已知映射（`src/meta.ts`）；无法推断的字段省略不猜，精确值留 3c | P0 | 一切智能选型的地基，推荐引擎（2a）的输入 | — |
 | 1d | **auto 策略参数化（余项）**：档位阈值（字符数/markers）、**预算上限**（maxCost / tier ceiling） | P0 | 防升级失控；升级次数上限已交付（`autoEscalationTiers`） | — |
@@ -83,6 +83,6 @@
 
 - 本文件是路线图的**唯一权威来源**；完成一项 → 从「待做」移到「已交付」并标注落地版本
 - 被阻塞项保留在「被阻塞」并写明卡点；卡点解除后移回「待做」
-- 优先级/排期变化只改这里；`HANDOFF.md`（本地私有，未追踪） / `PUBLISHING.md` / `README.md` 引用本文件、不复制路线内容
+- 优先级/排期变化只改这里；`.handoff/` 存储（本地私有，未追踪） / `PUBLISHING.md` / `README.md` 引用本文件、不复制路线内容
 - **peer 基线策略**：`peerDependencies` 声明"最低要求的服务版本"，保持宽松、不随 harness 每次升级而升；仅当接入依赖更高版本独有 API 时局部升对应服务
-- **发布一律走 git 管道**（tag → 审批 → publish），见 `HANDOFF.md` §4（本地私有，未追踪）
+- **发布一律走 git 管道**（tag → 审批 → publish），见 `.handoff/` 存储与 `PUBLISHING.md`（本地私有，未追踪）

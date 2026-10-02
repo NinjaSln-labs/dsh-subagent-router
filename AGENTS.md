@@ -7,6 +7,13 @@
 
 dsh-subagent-router——DeepSeek Harness 的模型路由子代理委派插件（`subagent_model` / `subagent_models` / `subagent_recommend`）；仓库根即工程根；分支、提交、验证、发版规范见下与 CONTRIBUTING.md。
 
+## 交接（未决项只写 `.handoff/`）
+
+- **唯一真源**：未决项（待办 / 坑 / 决策 / 下一步）只写 `.handoff/` 存储，**经 `handoff` CLI**（`add` / `close` / `set` / `next`…），禁在 README / ROADMAP / 别处另立待办文本（防双源漂移）。旧布局（`HANDOFF.md` / `HANDOFF-ARCHIVE/`）已迁入 `.handoff/legacy/`，为只读历史，不作真源。
+- **接手 / 收尾**：开工前 `handoff view` + `handoff next` 恢复上下文；门禁 `handoff check` 为交接完整性判据，不过不得前进。
+- **范围登记**：未决项可能落在的活体卷由 `handoff scope` 登记（本仓：`docs/ROADMAP.md`）；表外文件契约上不承载未决项。
+- **私有**：`.handoff/` 经 `.gitignore` 保持本机私有，不入库。
+
 ## 提交规范
 
 - **Conventional Commits 前缀 + 中文描述**：`feat(scope):` / `fix(scope):` / `refactor:` / `docs:` / `test:` / `chore:`；scope 用模块名；发布提交固定 `chore: release v<版本>`。

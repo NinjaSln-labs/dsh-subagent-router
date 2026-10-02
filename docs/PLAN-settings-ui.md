@@ -87,7 +87,7 @@
 
 - 代码：`src/config.ts`（已有）、`src/index.ts`（host settings）、`src/client.tsx`（新增）、`scripts/build-client.mjs`（新增）、`package.json`（exports/client/依赖）、`lib/client.js`（构建产物）
 - 测试：`tests/tools.spec.ts`（新增 host settings 用例）
-- 文档：`README.md`/`README.en.md`（配置说明补「设置页 UI」）、`docs/ROADMAP.md`（1b 完成）、`HANDOFF.md`（delta；本地私有，未追踪）
+- 文档：`README.md`/`README.en.md`（配置说明补「设置页 UI」）、`docs/ROADMAP.md`（1b 完成）、`.handoff/` 存储（delta；本地私有，未追踪）
 - 部署：profile lib 同步 + 重启验证
 
 ## 7. 参考（实证来源）
