@@ -95,8 +95,6 @@ const RECOMMEND_SYSTEM_PROMPT =
   + 'a JSON object in this exact shape: {"picks":[{"provider":"...","model":"...","reason":"one short reason"}]}. '
   + 'Select only from the provided candidates — never invent a provider or model id. Order picks best-first.'
 
-const PLUGIN_ID = 'dsh-subagent-router'
-
 /**
  * Normalize a task into a stable cache key: trim, lowercase, collapse
  * whitespace, and bound length so pathological tasks cannot bloat the key.
@@ -361,7 +359,10 @@ async function classifyViaLlm(
   }))
   const message = createUserMessage({
     content: [{ type: 'text', text: JSON.stringify({ task, candidates: compact }, null, 2) }],
-    source: { kind: 'plugin', plugin: PLUGIN_ID },
+    // 0.2.0-rc.2：MessageSource 收紧了——不再有通用 `plugin` kind（每个 producer
+    // 在自己的模块声明 kind）。这是本插件发起的一次性分类调用，作为用笺内容进入
+    // agent loop，用 `user` kind 即可（消费端对未知 kind 一律 fall through）。
+    source: { kind: 'user' },
   })
 
   const controller = new AbortController()

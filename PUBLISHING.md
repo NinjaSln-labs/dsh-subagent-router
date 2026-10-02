@@ -1,6 +1,6 @@
 # 发布记录：dsh-subagent-router
 
-**已发布**（GitHub + npm）：`dsh-subagent-router@0.5.1`（latest，CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
+**已发布**（GitHub + npm）：`dsh-subagent-router@0.6.0`（latest，CI 自动发布）。旧名 `dsh-subagent-model-picker`（0.1.0 / 0.1.1）已 deprecate 指向本包。
 
 ## 发布状态（2026-09 单库化更新）
 
@@ -9,13 +9,25 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | ✅ `dsh-subagent-router@0.5.1`（latest，CI 自动发布）· `0.5.0` · `0.4.0` · `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
-| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.5.1`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
+| npm | ✅ `dsh-subagent-router@0.6.0`（latest，CI 自动发布）· `0.5.1` · `0.5.0` · `0.4.0` · `0.3.0` · `0.2.0` · `0.1.1` · `0.1.0`（手动首发 bootstrap） |
+| GitHub | ✅ 单库 `NinjaSln-labs/dsh-subagent-router`；tag `subagent-router-v0.6.0`（本单库最新）；历史 tag `subagent-router-v0.3.0` 在 dsh-plugins monorepo |
 | 旧包 | ✅ `dsh-subagent-model-picker` 0.1.0/0.1.1 deprecated（Renamed to dsh-subagent-router） |
-| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.1`，见 HANDOFF §3.1（本地私有，未追踪）） |
-| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次；0.5.1 第五次） |
+| profile | `~/.dsh/profiles/web` 仍为 `file:` 协议指向本地插件目录（本机私有部署；发版后可选切回 npm `^0.5.1`，见 `.handoff/` 存储 status 槽（本地私有，未追踪）） |
+| 发布管道 | ✅ tag → 版本守卫 → 验证链 → OIDC trusted publishing 直发（0.1.1 首次跑通；0.3.0 第三次；**0.4.0 单库化后首个、OIDC Trusted Publisher 首次跑通，provenance v1**；0.5.0 第四次；0.5.1 第五次；**0.6.0 第六次**） |
 
 ## 版本历史
+
+- **0.6.0** — **宿主 dsh 0.2.0-rc.2 全量适配（peer 基线迁移，对旧宿主线不兼容）+ 配置卡改用宿主设计系统**（本单库发布）：
+  - peer 基线 `^0.1.5-rc.1` → `^0.2.0-rc.2`（cordis 仍 `^4.0.2`）；devDeps 精确 pin `0.2.0-rc.2`（cordis `4.0.4`）
+  - 死包清理：移除 `dsh-agent-presets`（已改名 singular）/`dsh-code-runtime`；补 `dsh-util-values` 与 dsh-tools 的 peer `dsh-sandbox`/`dsh-sandbox-policy`/`dsh-ptc-runtime`（`--legacy-peer-deps` 不自动装 peer，缺了直接 Cannot find package）
+  - **宿主设置底座换代**：`settings.installSection` + `setSource`/`onChange` 整套删除 → `SettingsForms`（从 Config schema 派生表单）；live 字段标 `.volatile()`（解析成带 `.get()` 的活体单元，`resolveConfig` 经 `live()` 解包）；`settings.configure({auto:true})` 注册自动页
+  - **写入只接受 volatile 叶子路径**：写容器 `autoTierPolicy` / `autoTierPicks` 被宿主静默拒绝（返回 false 不抛错）→ 改按 `['autoTierPolicy', <档>]` 叶子 `mutate`
+  - 客户端：`settingsScope` → `configForms`（用 `ctx.inject` 等待服务挂载，避免一次性 `ctx.get` 竞态致卡片静默消失）+ 槽位 `settings.plugin.item` → `plugins.item` / `plugins.bundle.config`（区分 `view`，否则 item 详情页出两张整卡）
+  - 配置卡改用宿主设计系统：`SettingsForm` + `SettingsValueField` + `Checkbox` + `Menu`（下拉触发器与字段输入同 token 同尺寸）；分档策略恢复「每档一个下拉（含『固定（手动选候选模型）』）」，选固定才展开候选模型；provider 下拉过滤 0 模型路由
+  - `MessageSource` 用 `kind:'user'`（0.2.0 无通用 `plugin` kind）；`SubagentResult.output` 变 `readonly`；`jobs.start` owner 用 `parent.id`（SessionId）
+  - client build EXTERNAL 同步 0.2.0 包名：去 `dsh-client-web-react`/`dsh-client-schema-form`，加 `ui-renderer/client`/`ui-settings/client`/`ui-primitives`（内联会得到第二套样式）
+  - 验证：strict typecheck + 132/132 vitest + build + mount 全绿 + `check:deploy` FAIL 0 + Playwright 实机（卡片渲染、下拉/多选/固定联动、写路径落 profile patch 并读回、控制台 0 错）
+  - 发布前置：profile 重装（`package.json` 元数据 `0.5.1` → `0.6.0`，否则宿主兼容守卫 `skipping profile bundle ... incompatible` 直接跳过插件）；`.handoff/` 存储已迁移并同步 status
 
 - **0.5.1** — **devDependencies 精确 pin，阻断 caret 跨 rc 漂移**（本单库发布；无运行时变化）：
   - 0.5.0 发布后验证发现**双版本漂移**：宿主 dsh 安装于 rc.1 发布后（冻结在 rc.1），rc.2 于同日稍晚发布，此后按 `^0.1.5-rc.1` 解析一律落 rc.2 → lockfile 实测 `dsh-llm`/`dsh-tools`/`dsh-settings`/`dsh-subagent`/`dsh-jobs` 全为 rc.2
@@ -55,7 +67,7 @@
 
 - **0.2.0** — **健康感知 + 配置化 + 设置页 UI**（HANDOFF 会话三大功能块）：
   - 内容：失败分类脱敏透传、死锚检测（RouteHealthStore）、终态换路（autoReroute）、升级参数化（autoEscalationTiers）、目录健康标注、模型路由优先级配置化四层（autoProviderOrder/autoTierPolicy/autoTierPicks/autoCeiling）、设置页配置 UI（host+client 化，settings 命名空间 + 插件卡片）
-  - 发布前置修复（`3f9c919`，接手会话）：client build 干净安装缺陷——`@deepseek-ai/dsh-client-ui-slots` module augmentation 在全新 `npm install` 下 TS2664/TS2345（`skipLibCheck` 不加载 .d.ts 传递 import）；修复 = devDependencies 精确 pin `0.1.0-rc.6`（与 runtime peer 解析副本一致，caret 会漂移致 SlotMap 双副本）+ client.tsx 副作用 `import type {}`。详见 HANDOFF §4 坑 9（本地私有，未追踪）
+  - 发布前置修复（`3f9c919`，接手会话）：client build 干净安装缺陷——`@deepseek-ai/dsh-client-ui-slots` module augmentation 在全新 `npm install` 下 TS2664/TS2345（`skipLibCheck` 不加载 .d.ts 传递 import）；修复 = devDependencies 精确 pin `0.1.0-rc.6`（与 runtime peer 解析副本一致，caret 会漂移致 SlotMap 双副本）+ client.tsx 副作用 `import type {}`。详见 `.handoff/` 坑记录 9（本地私有，未追踪）
   - 验证：strict typecheck + 66/66 vitest + build 全绿；CI 等价（fresh `npm install`）模拟通过后推 tag → GitHub 审批 → publish
 
 - **0.1.1** — **git 自动发布管道首次跑通**：
@@ -86,5 +98,5 @@ git push && git push --tags    # CI 验证 → 人工审批 → OIDC trusted pub
 
 ## 维护规则
 
-- 每个新版本发布后在本文件追加一条版本历史（一行式 + 关键细节），并在 `HANDOFF.md` §2 同步快照（本地私有，未追踪）
+- 每个新版本发布后在本文件追加一条版本历史（一行式 + 关键细节），并在 `.handoff/` 存储同步 status 快照（`handoff set status`；本地私有，未追踪）
 - 发布一律走 git 管道，不用手工 `npm publish`（bootstrap 例外仅限新包名首发）

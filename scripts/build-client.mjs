@@ -22,10 +22,13 @@ const EXTERNAL = [
   'react-dom/client',
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-web-react',
+  '@deepseek-ai/dsh-client-ui-renderer/client',
   '@deepseek-ai/dsh-client-ui-attachment',
-  '@deepseek-ai/dsh-client-schema-form',
+  '@deepseek-ai/dsh-client-ui-settings/client',
   '@deepseek-ai/dsh-client-ui-settings-plugins/client',
+  // 0.2.0 的设置页设计系统。必须 external：这些组件要与宿主共享同一套 React
+  // 上下文与 CSS token，内联一份会得到第二套样式（正是本次重构要消灭的问题）。
+  '@deepseek-ai/dsh-client-ui-primitives',
 ]
 
 await esbuild.build({

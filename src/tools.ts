@@ -96,7 +96,7 @@ function stopReasonError(result: SubagentResult): string | undefined {
 }
 
 /** Append the child's preserved partial answer to a stop-reason error. */
-function withPartialText(error: string, output: ContentBlock[]): string {
+function withPartialText(error: string, output: readonly ContentBlock[]): string {
   const text = output
     .filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
     .map(block => block.text)
@@ -1204,7 +1204,7 @@ export function registerModelPickerTools(
         const id = jobs.start({
           kind: 'subagent',
           label: args.description,
-          owner: parent,
+          owner: parent.id,
           run: () => {
             const controller = new AbortController()
             const start = ctx.subagents.start(fixedConfig.subagentProvider, { ...request, signal: controller.signal })

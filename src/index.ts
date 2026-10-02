@@ -50,7 +50,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import '@deepseek-ai/dsh-settings'
 import { registerModelPickerTools } from './tools.ts'
 import { registerCatalogRpc } from './catalog.ts'
-import { Config, fixedConfig } from './config.ts'
+import { Config, fixedConfig, live } from './config.ts'
 export { Config } from './config.ts'
 
 /** Prompt order after bounded delegation policy and before child reporting. */
@@ -100,15 +100,29 @@ export type ResolvedModelPickerConfig =
   Required<Omit<ModelPickerConfig, 'autoTierPolicy' | 'autoTierPicks'>>
   & Pick<ModelPickerConfig, 'autoTierPolicy' | 'autoTierPicks'>
 
+const TIER_KEYS = ['trivial', 'light', 'standard', 'complex'] as const
+type TierKey = typeof TIER_KEYS[number]
+
+/** Unwrap the per-tier volatile leaves (0.2.0 settings cells) into plain values. */
+function unwrapTiers<T>(raw: Partial<Record<TierKey, T>> | undefined): Partial<Record<TierKey, T>> | undefined {
+  if (raw === undefined) return undefined
+  const out: Partial<Record<TierKey, T>> = {}
+  for (const key of TIER_KEYS) {
+    const value = live(raw[key] as T | { get(): T } | undefined)
+    if (value !== undefined) out[key] = value
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export function resolveConfig(config: ModelPickerConfig): ResolvedModelPickerConfig {
   return {
-    autoEscalate: config.autoEscalate ?? defaultConfig.autoEscalate,
-    autoReroute: config.autoReroute ?? defaultConfig.autoReroute,
-    autoEscalationTiers: config.autoEscalationTiers ?? defaultConfig.autoEscalationTiers,
-    autoProviderOrder: config.autoProviderOrder ?? defaultConfig.autoProviderOrder,
-    autoTierPolicy: config.autoTierPolicy,
-    autoTierPicks: config.autoTierPicks,
-    recommendTimeoutMs: config.recommendTimeoutMs ?? defaultConfig.recommendTimeoutMs,
+    autoEscalate: live(config.autoEscalate) ?? defaultConfig.autoEscalate,
+    autoReroute: live(config.autoReroute) ?? defaultConfig.autoReroute,
+    autoEscalationTiers: live(config.autoEscalationTiers) ?? defaultConfig.autoEscalationTiers,
+    autoProviderOrder: live(config.autoProviderOrder) ?? defaultConfig.autoProviderOrder,
+    autoTierPolicy: unwrapTiers(config.autoTierPolicy),
+    autoTierPicks: unwrapTiers(config.autoTierPicks),
+    recommendTimeoutMs: live(config.recommendTimeoutMs) ?? defaultConfig.recommendTimeoutMs,
   }
 }
 
@@ -119,27 +133,16 @@ export function apply(ctx: Context, config: ModelPickerConfig = {}): void {
   // (设置 → 插件配置) override it. `current` holds the latest authoritative
   // value and every consumer reads through `getResolved()` so a settings
   // write takes effect without re-registering tools.
-  let resolved = resolveConfig(config)
-  const getResolved = (): ResolvedModelPickerConfig => resolved
-  // `setSource` hands us a thunk reading the live settings scope; `onChange`
-  // fires on every committed settings write, so we re-resolve from that
-  // thunk — this is what makes a 设置 → 插件配置 edit take effect live.
-  // settings.installSection is wired through `ctx.inject(['settings'], …)`,
-  // so it waits for the settings service to mount (and is inert when it never
-  // does). dsh-settings@>=0.1.2-alpha.4 removed the module-level
-  // installSettingsSection/settingsNamespace exports.
-  let readScope: (() => ModelPickerConfig) | undefined
+  // 0.2.0-rc.2：宿主 settings 换成 `SettingsForms`（从 Config schema 派生表单），
+  // 旧的 `installSection` + setSource/onChange 钩子已删除。live 字段在 schema 里标了
+  // `.volatile()`，其解析值是带 `.get()` 的活体单元——`resolveConfig` 每次调用都经
+  // `live()` 读当前快照，这就是「设置 → 插件配置 改完下次使用即生效」的活源语义，
+  // 取代了旧的 setSource 重绑定。`configure({ auto: true })` 为本条目注册自动页面；
+  // 经 `ctx.inject(['settings'], …)` 接线，服务未挂载时惰性（不报错）。
+  const getResolved = (): ResolvedModelPickerConfig => resolveConfig(config)
   ctx.inject(['settings'], (sctx) => {
     try {
-      sctx.settings.installSection(ctx, 'subagent-router', Config, config, {
-        setSource: (current) => {
-          readScope = current
-          resolved = resolveConfig(current())
-        },
-        onChange: () => {
-          if (readScope !== undefined) resolved = resolveConfig(readScope())
-        },
-      })
+      sctx.effect(() => sctx.settings.configure({ auto: true }, sctx.fiber))
     } catch (err) {
       ctx.logger.warn(
         `[dsh-subagent-router] settings section invalid — falling back to entry config: ${err instanceof Error ? err.message : String(err)}`,

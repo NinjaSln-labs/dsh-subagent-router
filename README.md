@@ -50,7 +50,7 @@ bundle 只插入一行组合（`subagent-router`）。它消费 host 的 `tools`
 
 ## 配置
 
-**设置页 UI**：插件提供 client half，配置可在 **设置 → 插件配置** 里直接编辑（`subagent-router` 卡片）。**全部可配置项都是 live 字段**——编辑即时写入用户设置层（`~/.dsh/settings.yaml` 的 `subagent-router` 段），**保存后下一次 `subagent_model` 调用即生效，无需重启**；清除字段回退到下方组合行配置。
+**Plugins 页配置**：插件提供 client half，配置在 **Plugins →「子代理模型路由配置」** 里直接编辑（提供方优先级、各档选型策略与候选模型均为下拉选择）。**全部可配置项都是 live 字段**（schema 标 `.volatile()`）——保存写入 profile patch 的 `subagent-router` 条目，**保存后下一次 `subagent_model` 调用即生效，无需重启**；清除字段回退到下方组合行配置（base 层）。
 
 也可以写在组合行的 `config` 里（作为 base 层，被设置页 user 层覆盖）：
 
@@ -115,7 +115,7 @@ npm run build  # tsc -> lib/ + esbuild 客户端 bundle
 
 ## 路线图
 
-自动路由策略的后续计划（目录元数据、推荐工具、反馈闭环、预算上限）：见 [docs/ROADMAP.md](./docs/ROADMAP.md)。发布记录见 [PUBLISHING.md](./PUBLISHING.md)。交接记录（HANDOFF.md）为本地私有文件，不入仓库/npm 包。
+自动路由策略的后续计划（目录元数据、推荐工具、反馈闭环、预算上限）：见 [docs/ROADMAP.md](./docs/ROADMAP.md)。发布记录见 [PUBLISHING.md](./PUBLISHING.md)。交接记录（`.handoff/` 存储）为本地私有，不入仓库/npm 包。
 
 ## License
 

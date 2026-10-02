@@ -48,12 +48,13 @@ The bundle inserts one composition row (`subagent-router`). It consumes the host
 
 ## Configuration
 
-**Settings UI**: the plugin ships a client half, so its configuration can be
-edited directly under **Settings → Plugins** (the `subagent-router` card).
-**Every configurable field is live** — edits write to the user settings layer
-(`subagent-router` section of `~/.dsh/settings.yaml`) and the next
-`subagent_model` call picks them up **without a restart**; clearing a field
-falls back to the composition-row value below.
+**Plugins page config**: the plugin ships a client half, so its configuration
+is edited under **Plugins → "子代理模型路由配置"** (provider priority, per-tier
+strategy and candidate models are all dropdowns). **Every configurable field is
+live** (marked `.volatile()` in the schema) — a save writes the `subagent-router`
+entry in the profile patch and the next `subagent_model` call picks it up
+**without a restart**; clearing a field falls back to the composition-row value
+below (the base layer).
 
 Alternatively, configure via the composition row's `config` (the base layer,
 overridden by the settings UI user layer):
@@ -122,7 +123,7 @@ The test suite drives the real plugin body on a real `ToolRuntime` + `SubagentRu
 
 ## Roadmap
 
-Planned work for the auto-routing policy (catalog metadata, recommend tool, feedback loop, budgets): see [docs/ROADMAP.md](./docs/ROADMAP.md); release history in [PUBLISHING.md](./PUBLISHING.md). Handoff notes (HANDOFF.md) are a local-private file and are not in the repo or the npm package.
+Planned work for the auto-routing policy (catalog metadata, recommend tool, feedback loop, budgets): see [docs/ROADMAP.md](./docs/ROADMAP.md); release history in [PUBLISHING.md](./PUBLISHING.md). Handoff notes (the `.handoff/` store) are local-private and are not in the repo or the npm package.
 
 ## License
 

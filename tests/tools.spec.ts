@@ -1368,14 +1368,15 @@ describe('dsh-subagent-router configurable auto routing (edge cases)', () => {
 
 describe('dsh-subagent-router config schema', () => {
   it('schema defaults match resolveConfig defaults (dual-source sync, live fields only)', async () => {
-    const { Config } = await import('../src/config.ts')
+    const { Config, live } = await import('../src/config.ts')
     const { resolveConfig, defaultConfig } = await import('../src/index.ts')
     const fromSchema = Config(undefined)
     const fromResolve = resolveConfig({})
-    expect(fromSchema.autoEscalate).toBe(fromResolve.autoEscalate)
-    expect(fromSchema.autoReroute).toBe(fromResolve.autoReroute)
-    expect(fromSchema.autoEscalationTiers).toBe(fromResolve.autoEscalationTiers)
-    expect(fromSchema.autoProviderOrder ?? []).toEqual(fromResolve.autoProviderOrder ?? [])
+    // 0.2.0: live fields resolve to volatile cells; `live()` reads the snapshot.
+    expect(live(fromSchema.autoEscalate)).toBe(fromResolve.autoEscalate)
+    expect(live(fromSchema.autoReroute)).toBe(fromResolve.autoReroute)
+    expect(live(fromSchema.autoEscalationTiers)).toBe(fromResolve.autoEscalationTiers)
+    expect(live(fromSchema.autoProviderOrder) ?? []).toEqual(fromResolve.autoProviderOrder ?? [])
     // Registration-time knobs are fixed constants, not config fields — verify
     // the fixed defaults match the harness-native subagent semantics.
     const { fixedConfig } = await import('../src/config.ts')
@@ -1389,24 +1390,27 @@ describe('dsh-subagent-router config schema', () => {
   })
 
   it('schema accepts partial tier config', async () => {
-    const { Config } = await import('../src/config.ts')
+    const { Config, live } = await import('../src/config.ts')
     const partial = Config({ autoTierPolicy: { trivial: 'cheapest' } })
-    expect(partial.autoTierPolicy).toEqual({ trivial: 'cheapest' })
-    expect(partial.autoProviderOrder).toEqual([])
+    expect(live(partial.autoTierPolicy?.trivial)).toBe('cheapest')
+    expect(live(partial.autoTierPolicy?.light)).toBeUndefined()
+    expect(live(partial.autoProviderOrder)).toEqual([])
   })
 
   it('schema accepts full live config and rejects unknown snapshot fields', async () => {
-    const { Config } = await import('../src/config.ts')
+    const { Config, live } = await import('../src/config.ts')
     const full = Config({
       autoProviderOrder: ['a', 'b'],
       autoTierPolicy: { trivial: 'cheapest', standard: 'anchor', complex: 'strongest' },
       autoTierPicks: { complex: ['x'] },
       autoEscalationTiers: 2,
     })
-    expect(full.autoProviderOrder).toEqual(['a', 'b'])
-    expect(full.autoTierPolicy).toEqual({ trivial: 'cheapest', standard: 'anchor', complex: 'strongest' })
-    expect(full.autoTierPicks.complex).toEqual(['x'])
-    expect(full.autoEscalationTiers).toBe(2)
+    expect(live(full.autoProviderOrder)).toEqual(['a', 'b'])
+    expect(live(full.autoTierPolicy?.trivial)).toBe('cheapest')
+    expect(live(full.autoTierPolicy?.standard)).toBe('anchor')
+    expect(live(full.autoTierPolicy?.complex)).toBe('strongest')
+    expect(live(full.autoTierPicks?.complex)).toEqual(['x'])
+    expect(live(full.autoEscalationTiers)).toBe(2)
     // Schemastery passes unknown keys through; registration-time snapshot keys
     // (backgroundMode, toolName, …) are simply never consumed — the fixed
     // behavior comes from `fixedConfig`, so a leftover `backgroundMode` write
@@ -1415,56 +1419,41 @@ describe('dsh-subagent-router config schema', () => {
     expect(withSnapshot.backgroundMode).toBe('one-shot')  // passthrough, inert
   })
 
-  it('unset tiers normalize to empty objects, not fake empty-array slots (HANDOFF 坑 8)', async () => {
-    // 根因回归：schemastery 的 required(false) 会把缺失键归一化成类型默认值
-    // （数组 → 空数组），导致用户从未配置 autoTierPicks 时归一化为
-    // `{trivial: [], light: [], standard: [], complex: []}`——client 端
-    // `picks !== undefined` 把空数组当成「固定」，UI 表现为「选默认保存后又回到
-    // 固定」。`default(undefined)` 让缺省键保持 undefined、整段保持 {}。
-    const { Config } = await import('../src/config.ts')
+  it('unset tiers stay undefined through the volatile cells (`.handoff/` pit 8 + 0.2.0 volatile)', async () => {
+    // pit 8 回归：schemastery 的 required(false) 会把缺失键归一化成类型默认值
+    // （数组 → 空数组），client 端 `picks !== undefined` 把空数组当成「固定」。
+    // 0.2.0 把 live 字段包成 volatile 活体单元——`live()` 解包，未写过的单元读
+    // undefined，于是 resolveConfig 的档位仍为 undefined（{}），语义不变。
+    const { Config, live } = await import('../src/config.ts')
+    const { resolveConfig } = await import('../src/index.ts')
     const empty = Config({})
-    expect(empty.autoTierPicks).toEqual({})
-    expect(empty.autoTierPolicy).toEqual({})
-    expect(empty.autoTierPicks.trivial).toBeUndefined()
+    expect(live(empty.autoTierPicks?.trivial)).toBeUndefined()
+    expect(live(empty.autoTierPolicy?.trivial)).toBeUndefined()
+    expect(resolveConfig(empty as never)).toMatchObject({ autoTierPicks: undefined, autoTierPolicy: undefined })
     // 真实配置的档位不受影响；其它档位缺省仍为 undefined（非空数组）。
     const partial = Config({ autoTierPicks: { complex: ['x'] } })
-    expect(partial.autoTierPicks).toEqual({ complex: ['x'] })
-    expect(partial.autoTierPicks.trivial).toBeUndefined()
+    expect(live(partial.autoTierPicks?.complex)).toEqual(['x'])
+    expect(live(partial.autoTierPicks?.trivial)).toBeUndefined()
   })
 })
 
 describe('dsh-subagent-router host settings integration', () => {
-  /** Minimal settings service: implements the new dsh-settings@>=0.1.2-alpha.4
-   *  `installSection(owner, ns, schema, entry, hooks)` contract (the old
-   *  `register` module path was removed). The resolved value is the schema
-   *  defaults merged over the composition `entry` then the user `section`;
-   *  `setSection` writes the user layer and re-fires setSource + onChange. */
+  /** Minimal 0.2.0 settings service. `SettingsForms` derives forms straight
+   *  from the plugin's Config schema, so the plugin only calls `configure({auto})`
+   *  to register its auto page; live values ride the schema's volatile cells
+   *  (not a setSource thunk), so this fake only needs to record `configure`. */
   function fakeSettingsService() {
-    let section: Record<string, unknown> = {}
-    let entry: object = {}
-    const hooks = { setSource: null as null | ((fn: () => unknown) => void), onChange: null as null | (() => void) }
-    const resolve = () => ({ ...entry, ...section })
+    let configured = false
     const service = {
-      installSection(_owner: unknown, _ns: string, _schema: unknown, entry_: object, h: { setSource: (fn: () => unknown) => void; onChange: () => void }) {
-        entry = entry_ ?? {}
-        hooks.setSource = h.setSource
-        hooks.onChange = h.onChange
-        hooks.setSource(resolve)
-        hooks.onChange()
-        return {
-          get: () => resolve(),
-          watch: () => () => {},
-          update: async (patch: object) => { section = { ...section, ...patch }; hooks.setSource?.(resolve); hooks.onChange?.() },
-        }
-      },
+      configure(_presentation: unknown, _owner: unknown): () => void { configured = true; return () => {} },
       describe() { return [] },
       get(_ns: string) { return undefined },
     }
-    return { service, setSection: (patch: object) => { section = { ...section, ...patch }; hooks.setSource?.(resolve); hooks.onChange?.() } }
+    return { service, wasConfigured: () => configured }
   }
 
-  it('reads configuration from the settings scope when the service is present', async () => {
-    const { service, setSection } = fakeSettingsService()
+  it('reads live config through volatile cells and registers the auto settings page', async () => {
+    const { service, wasConfigured } = fakeSettingsService()
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
@@ -1473,25 +1462,20 @@ describe('dsh-subagent-router host settings integration', () => {
     const provider = new ScriptedProvider('spawn')
     ctx.subagents.registerProvider(provider)
     ctx.provide('settings', service as never)
-    await ctx.plugin(plugin)
-    // Default (no user layer): trivial → heuristic pick (cheapest flash).
-    let result = await callTool(ctx, 'subagent_model', {
+    // The composition entry normalizes through the Config schema, wrapping every
+    // live field in a volatile cell; `resolveConfig` unwraps via `live()` on each
+    // call — that is what makes a settings write take effect without
+    // re-registering the tools.
+    await ctx.plugin(plugin, { autoTierPolicy: { trivial: 'strongest' } } as never)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(wasConfigured()).toBe(true)
+    const result = await callTool(ctx, 'subagent_model', {
       description: 'say hi',
       prompt: 'hi',
       model: 'auto',
     }, fakeAgentWithRoute)
     expect(result.isError).toBe(false)
-    expect((provider.starts[0]!.agentOptions as { model?: string }).model).toBe('deepseek-v4-flash')
-    // Settings write: force trivial → strongest. The tool must pick v4-pro
-    // WITHOUT re-registration (responsive config).
-    setSection({ autoTierPolicy: { trivial: 'strongest' } })
-    result = await callTool(ctx, 'subagent_model', {
-      description: 'say hi',
-      prompt: 'hi',
-      model: 'auto',
-    }, fakeAgentWithRoute)
-    expect(result.isError).toBe(false)
-    expect((provider.starts[provider.starts.length - 1]!.agentOptions as { model?: string }).model).toBe('deepseek-v4-pro')
+    expect((provider.starts[0]!.agentOptions as { model?: string }).model).toBe('deepseek-v4-pro')
     expect(text(result)).toContain('policy=strongest')
   })
 
